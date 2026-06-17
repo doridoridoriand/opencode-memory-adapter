@@ -113,3 +113,19 @@ npm install @yfedberts/huscarl
 ## License
 
 MIT
+
+## Development Safety
+
+Install the versioned git hooks once per clone:
+
+```bash
+npm run hooks:install
+```
+
+Run a public-repo audit before publishing:
+
+```bash
+npm run audit:public
+```
+
+The pre-commit hook scans staged additions for common secrets, email addresses, and absolute home-directory paths.

@@ -12,9 +12,13 @@
   },
   "scripts": {
     "build": "tsc",
+    "hooks:install": "node scripts/install-hooks.js",
     "prepare": "npm run build",
     "prepack": "npm run build",
     "init": "node scripts/init-config.js init",
+    "scan:sensitive": "node scripts/sensitive-scan.js --tracked",
+    "scan:sensitive:staged": "node scripts/sensitive-scan.js --staged",
+    "audit:public": "node scripts/sensitive-scan.js --public-audit",
     "test": "vitest run"
   },
   "peerDependencies": {
