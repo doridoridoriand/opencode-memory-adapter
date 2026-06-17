@@ -1,0 +1,40 @@
+{
+  "name": "opencode-memory-plugin",
+  "description": "OpenCode plugin that provides persistent memory functionality via multiple provider backends",
+  "version": "0.1.0",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "exports": "./dist/index.js",
+  "files": ["dist", "scripts", "README.md", "LICENSE"],
+  "bin": {
+    "opencode-memory-plugin": "./scripts/init-config.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "prepack": "npm run build",
+    "init": "node scripts/init-config.js init",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@opencode-ai/plugin": ">=1.0.0",
+    "mem0ai": ">=3.0.0",
+    "@honcho-ai/sdk": ">=2.0.0",
+    "@yfedberts/huscarl": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "mem0ai": { "optional": true },
+    "@honcho-ai/sdk": { "optional": true },
+    "@yfedberts/huscarl": { "optional": true }
+  },
+  "dependencies": {
+    "zod": "^4.1.8"
+  },
+  "devDependencies": {
+    "@opencode-ai/plugin": "^1.17.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}
