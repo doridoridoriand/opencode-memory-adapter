@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { tool } from "@opencode-ai/plugin";
-import { getConfig, getProvider } from "../memory-singleton.js";
+import { getProvider } from "../memory-singleton.js";
+import { resolveScope } from "./shared.js";
 
 export const memoryList = tool({
   description: "List stored memories with optional filtering.",
@@ -15,12 +16,14 @@ export const memoryList = tool({
       .describe("Filter memories by category."),
     limit: z
       .number()
+      .int()
+      .positive()
       .optional()
-      .describe("Maximum number of memories to return. Defaults to 50."),
+      .describe("Positive integer maximum number of memories to return. Defaults to 50."),
   },
   async execute(args) {
     const provider = getProvider();
-    const scope = args.scope ?? getConfig().scope;
+    const scope = resolveScope(args.scope);
     const results = await provider.list({
       scope,
       category: args.category,

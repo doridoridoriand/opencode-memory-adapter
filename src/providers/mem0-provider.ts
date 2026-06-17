@@ -120,11 +120,10 @@ export class Mem0Provider extends BaseMemoryProvider {
 
   async search(query: string, opts: SearchOptions): Promise<MemoryResult[]> {
     const sdk = await this.getSdk();
+    const filters = buildSearchFilters(opts.scope, opts.category);
     const response = await sdk.search(query, {
       topK: opts.topK ?? 5,
-      ...(buildSearchFilters(opts.scope, opts.category)
-        ? { filters: buildSearchFilters(opts.scope, opts.category) }
-        : {}),
+      ...(filters ? { filters } : {}),
     });
 
     const memories = Array.isArray(response?.results)
@@ -143,11 +142,10 @@ export class Mem0Provider extends BaseMemoryProvider {
 
   async list(opts: ListOptions): Promise<MemoryResult[]> {
     const sdk = await this.getSdk();
+    const filters = buildSearchFilters(opts.scope, opts.category);
     const response = await sdk.getAll({
       topK: opts.limit ?? 50,
-      ...(buildSearchFilters(opts.scope, opts.category)
-        ? { filters: buildSearchFilters(opts.scope, opts.category) }
-        : {}),
+      ...(filters ? { filters } : {}),
     });
 
     const memories = Array.isArray(response?.results)

@@ -4,6 +4,7 @@ import { normalizeMemoryMetadata } from "./metadata.js";
 import type { HonchoConfig, ListOptions, MemoryMetadata, MemoryResult, SearchOptions } from "../types.js";
 
 const HONCHO_PEER_ID = "opencode-memory-plugin";
+const HONCHO_LIST_CONCURRENCY = 5;
 
 function buildMetadata(metadata: MemoryMetadata): MemoryMetadata {
   return normalizeMemoryMetadata({
@@ -28,6 +29,21 @@ function toMemoryResult(message: Record<string, unknown>): MemoryResult {
     content: typeof message.content === "string" ? message.content : "",
     metadata,
   };
+}
+
+async function mapWithConcurrency<T, U>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T) => Promise<U>
+): Promise<U[]> {
+  const results: U[] = [];
+
+  for (let index = 0; index < items.length; index += concurrency) {
+    const chunk = items.slice(index, index + concurrency);
+    results.push(...(await Promise.all(chunk.map(mapper))));
+  }
+
+  return results;
 }
 
 export class HonchoProvider extends BaseMemoryProvider {
@@ -91,8 +107,9 @@ export class HonchoProvider extends BaseMemoryProvider {
 
   async search(query: string, opts: SearchOptions): Promise<MemoryResult[]> {
     const sdk = await this.getSdk();
+    const limit = opts.topK ?? 5;
     const results = await sdk.search(query, {
-      limit: Math.max(opts.topK ?? 5, 10),
+      limit: Math.max(limit, 10),
     });
 
     const memories = Array.isArray(results)
@@ -101,7 +118,7 @@ export class HonchoProvider extends BaseMemoryProvider {
 
     let filtered = this.filterByScope(memories, opts.scope);
     filtered = this.filterByCategory(filtered, opts.category);
-    return this.applyLimit(filtered, opts.topK);
+    return this.applyLimit(filtered, limit);
   }
 
   async delete(id: string): Promise<void> {
@@ -112,38 +129,37 @@ export class HonchoProvider extends BaseMemoryProvider {
 
   async list(opts: ListOptions): Promise<MemoryResult[]> {
     const sdk = await this.getSdk();
+    const limit = opts.limit ?? 50;
     const page = await sdk.sessions({
-      size: Math.max(opts.limit ?? 50, 50),
+      size: limit,
       reverse: true,
     });
     const sessions = await page.toArray();
-    const memories: MemoryResult[] = [];
+    const memories = (
+      await mapWithConcurrency(sessions, HONCHO_LIST_CONCURRENCY, async (session: any) => {
+        const messages = await session.messages({ size: 1, reverse: true });
+        const message = messages.items[0];
+        if (!message) return null;
 
-    for (const session of sessions) {
-      const sessionMetadata =
-        session.metadata && Object.keys(session.metadata).length > 0
-          ? session.metadata
-          : await session.getMetadata();
+        const messageMetadata =
+          message.metadata && Object.keys(message.metadata).length > 0 ? message.metadata : null;
+        const sessionMetadata =
+          messageMetadata ||
+          (session.metadata && Object.keys(session.metadata).length > 0
+            ? session.metadata
+            : await session.getMetadata());
 
-      const messages = await session.messages({ size: 1, reverse: true });
-      const message = messages.items[0];
-      if (!message) continue;
-
-      memories.push(
-        toMemoryResult({
+        return toMemoryResult({
           ...message,
-          metadata:
-            message.metadata && Object.keys(message.metadata).length > 0
-              ? message.metadata
-              : sessionMetadata,
+          metadata: messageMetadata ?? sessionMetadata,
           sessionId: session.id,
-        })
-      );
-    }
+        });
+      })
+    ).filter((memory): memory is MemoryResult => memory != null);
 
     let filtered = this.filterByScope(memories, opts.scope);
     filtered = this.filterByCategory(filtered, opts.category);
-    return this.applyLimit(filtered, opts.limit ?? 50);
+    return this.applyLimit(filtered, limit);
   }
 
   async summarize(sessionId?: string): Promise<string> {

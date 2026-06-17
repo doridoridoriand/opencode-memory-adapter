@@ -5,6 +5,7 @@ import { OpenVikingProvider } from "../src/providers/openviking-provider.js";
 import { createProvider } from "../src/providers/index.js";
 import { getConfig, setConfig } from "../src/memory-singleton.js";
 import { normalizeMemoryMetadata } from "../src/providers/metadata.js";
+import { resolveScope } from "../src/tools/shared.js";
 import { loadConfig } from "../src/config.js";
 
 describe("createProvider", () => {
@@ -104,5 +105,15 @@ describe("runtime config", () => {
   it("stores the loaded config for tool defaults", () => {
     setConfig({ provider: "mem0", scope: "project" });
     expect(getConfig().scope).toBe("project");
+  });
+
+  it("falls back to global scope when config omits scope", () => {
+    setConfig({ provider: "mem0" });
+    expect(resolveScope(undefined)).toBe("global");
+  });
+
+  it("prefers an explicit scope over config", () => {
+    setConfig({ provider: "mem0", scope: "global" });
+    expect(resolveScope("project")).toBe("project");
   });
 });

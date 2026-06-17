@@ -58,7 +58,7 @@ interface MemoryResult {
 | `memory-recall` | Semantic search | query, scope?, category?, topK? |
 | `memory-delete` | Delete memory | id (required: memory ID to delete) |
 | `memory-list` | List memories | scope?, category?, limit? |
-| `memory-summary` | Session summary | auto?, sessionId? |
+| `memory-summary` | Recent memory summary | auto?, sessionId? |
 
 ## Memory Providers
 

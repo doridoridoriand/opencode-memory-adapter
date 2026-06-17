@@ -60,7 +60,7 @@ Semantically search stored memories.
 query: string (required)
 scope: "global" | "project" (optional)
 category: string (optional)
-topK: number (optional, default: 5)
+topK: positive integer (optional, default: 5)
 ```
 
 ### memory-delete
@@ -76,7 +76,7 @@ List stored memories with optional filtering.
 ```
 scope: "global" | "project" (optional)
 category: string (optional)
-limit: number (optional, default: 50)
+limit: positive integer (optional, default: 50)
 ```
 
 ### memory-summary
@@ -84,7 +84,7 @@ Generate a summary of recent conversation memories.
 
 ```
 auto: boolean (optional)
-sessionId: string (optional)
+sessionId: string (optional, provider-specific hint)
 ```
 
 ## Providers
