@@ -56,7 +56,7 @@ interface MemoryResult {
 |---|---|---|
 | `memory-store` | Save memory | content, category, tags?, scope? |
 | `memory-recall` | Semantic search | query, scope?, category?, topK? |
-| `memory-delete` | Delete memory | id? or query? |
+| `memory-delete` | Delete memory | id (required: memory ID to delete) |
 | `memory-list` | List memories | scope?, category?, limit? |
 | `memory-summary` | Session summary | auto?, sessionId? |
 
@@ -64,7 +64,7 @@ interface MemoryResult {
 
 | Provider | npm pkg | TS SDK | API Key | Local |
 |---|---|---|---|---|
-| **mem0** | `mem0ai` | ✅ | No (optional) | Yes (Ollama OpenAI-compatible) |
+| **mem0** | `mem0ai` | ✅ | Not required | Yes (Ollama OpenAI-compatible) |
 | **Honcho** | `@honcho-ai/sdk` | ✅ | Yes | No |
 | **OpenViking** | `@yfedberts/huscarl` | ✅ | No | Requires OpenViking server |
 
@@ -84,15 +84,15 @@ interface MemoryResult {
 - Requires OpenViking server running at `http://localhost:1933`
 - Filesystem-based (`viking://`) memory paradigm
 
-# Configuration
+## Configuration
 
 Global: `~/.config/opencode-memory/config.json`
 Project: `.opencode-memory.json` (takes precedence)
 
 ```json
 {
-  "provider": "mem0",          // "mem0" | "honcho" | "openviking"
-  "scope": "global",           // "global" | "project"
+  "provider": "mem0",
+  "scope": "global",
   "mem0": {
     "ollamaBaseUrl": "http://localhost:11434",
     "llmModel": "qwen2.5:7b",
@@ -111,6 +111,9 @@ Project: `.opencode-memory.json` (takes precedence)
 }
 ```
 
+**provider**: `"mem0"` | `"honcho"` | `"openviking"` — which memory provider to use.
+**scope**: `"global"` | `"project"` — whether memories are stored globally or per-project.
+
 ## Dependencies
 
 ```json
@@ -124,11 +127,6 @@ Project: `.opencode-memory.json` (takes precedence)
     "mem0ai": { "optional": true },
     "@honcho-ai/sdk": { "optional": true },
     "@yfedberts/huscarl": { "optional": true }
-  },
-  "optionalDependencies": {
-    "mem0ai": "latest",
-    "@honcho-ai/sdk": "latest",
-    "@yfedberts/huscarl": "latest"
   }
 }
 ```
