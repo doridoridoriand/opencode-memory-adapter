@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { tool } from "@opencode-ai/plugin";
-import { getProvider } from "../memory-singleton.js";
+import { getConfig, getProvider } from "../memory-singleton.js";
 
 export const memoryStore = tool({
   description: "Save a memory entry with content and metadata.",
@@ -20,10 +20,11 @@ export const memoryStore = tool({
   },
   async execute(args) {
     const provider = getProvider();
+    const scope = args.scope ?? getConfig().scope;
     const result = await provider.add(args.content, {
       category: args.category,
       tags: args.tags,
-      scope: args.scope,
+      scope,
     });
     return `<title>Memory stored (${result.id})</title>\n\nSuccessfully saved memory.`;
   },

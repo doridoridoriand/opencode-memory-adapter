@@ -119,9 +119,13 @@ Project: `.opencode-memory.json` (takes precedence)
 ```json
 {
   "peerDependencies": {
+    "@opencode-ai/plugin": ">=1.0.0",
     "mem0ai": ">=3.0.0",
     "@honcho-ai/sdk": ">=2.0.0",
     "@yfedberts/huscarl": ">=1.0.0"
+  },
+  "dependencies": {
+    "zod": "^4.1.8"
   },
   "peerDependenciesMeta": {
     "mem0ai": { "optional": true },
@@ -158,7 +162,7 @@ opencode-memory-plugin/
 │       ├── memory-list.ts
 │       └── memory-summary.ts
 ├── scripts/
-│   └── install.js                # Postinstall
+│   └── init-config.js            # Explicit config initializer
 ├── test/
 │   └── providers.test.ts
 └── dist/
@@ -168,8 +172,8 @@ opencode-memory-plugin/
 
 ```bash
 npm install -g opencode-memory-plugin mem0ai
-# Postinstall copies tools to ~/.config/opencode/tools/
-# Creates ~/.config/opencode-memory/config.json
+npx opencode-memory-plugin init
+# Creates ~/.config/opencode-memory/config.json on demand
 ```
 
 ## License

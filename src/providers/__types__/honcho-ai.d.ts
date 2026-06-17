@@ -1,19 +1,56 @@
 declare module "@honcho-ai/sdk" {
-  interface HonchoConfig {
-    apiKey?: string;
-    baseURL?: string;
+  export interface MessageInput {
+    peerId: string;
+    content: string;
+    metadata?: Record<string, unknown>;
   }
-  class Honcho {
-    constructor(config: HonchoConfig);
-    chats: {
-      createChat(params: {
-        workspaceId: string;
-        messages: { role: string; content: string }[];
-        customId?: string;
-      }): Promise<{ id: string }>;
-      retrieveChats(params: { workspaceId: string; limit?: number }): Promise<any[]>;
-      deleteChat(workspaceId: string, chatId: string): Promise<void>;
-    };
+
+  export interface Message {
+    id: string;
+    content: string;
+    sessionId: string;
+    metadata: Record<string, unknown>;
+    createdAt: string;
   }
-  export default Honcho;
+
+  export interface Page<T> {
+    items: T[];
+    toArray(): Promise<T[]>;
+  }
+
+  export class Peer {
+    message(content: string, options?: { metadata?: Record<string, unknown> }): MessageInput;
+  }
+
+  export class Session {
+    readonly id: string;
+    readonly metadata?: Record<string, unknown>;
+    addPeers(peers: Peer | string | Array<Peer | string>): Promise<void>;
+    addMessages(messages: MessageInput | MessageInput[]): Promise<Message[]>;
+    messages(options?: {
+      filters?: Record<string, unknown>;
+      page?: number;
+      size?: number;
+      reverse?: boolean;
+    }): Promise<Page<Message>>;
+    getMetadata(): Promise<Record<string, unknown>>;
+    delete(): Promise<void>;
+  }
+
+  export class Honcho {
+    constructor(options?: {
+      apiKey?: string;
+      baseURL?: string;
+      workspaceId?: string;
+    });
+    peer(id: string, options?: { metadata?: Record<string, unknown> }): Promise<Peer>;
+    session(id: string, options?: { metadata?: Record<string, unknown> }): Promise<Session>;
+    search(query: string, options?: { filters?: Record<string, unknown>; limit?: number }): Promise<Message[]>;
+    sessions(options?: {
+      filters?: Record<string, unknown>;
+      page?: number;
+      size?: number;
+      reverse?: boolean;
+    }): Promise<Page<Session>>;
+  }
 }

@@ -1,6 +1,7 @@
+import { randomUUID } from "node:crypto";
 import { BaseMemoryProvider } from "./base.js";
-import type { MemoryMetadata, MemoryResult, SearchOptions, ListOptions } from "../types.js";
-import type { Mem0Config } from "../types.js";
+import { normalizeMemoryMetadata } from "./metadata.js";
+import type { ListOptions, Mem0Config, MemoryMetadata, MemoryResult, SearchOptions } from "../types.js";
 
 const DEFAULT_MEM0_CONFIG: Required<Mem0Config> = {
   ollamaBaseUrl: "http://localhost:11434",
@@ -8,6 +9,39 @@ const DEFAULT_MEM0_CONFIG: Required<Mem0Config> = {
   embedModel: "nomic-embed-text",
   historyDbPath: null,
 };
+
+function withOpenAIV1Path(baseUrl: string): string {
+  const trimmed = baseUrl.replace(/\/+$/, "");
+  return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
+}
+
+function buildSearchFilters(scope?: string, category?: string): Record<string, unknown> | undefined {
+  const filters = Object.fromEntries(
+    Object.entries({ scope, category }).filter(([, value]) => value != null)
+  );
+  return Object.keys(filters).length > 0 ? filters : undefined;
+}
+
+function toMemoryResult(memory: Record<string, unknown>): MemoryResult {
+  const metadata = normalizeMemoryMetadata(
+    typeof memory.metadata === "object" && memory.metadata != null
+      ? (memory.metadata as Record<string, unknown>)
+      : {}
+  );
+
+  return {
+    id:
+      (typeof memory.id === "string" && memory.id) ||
+      (typeof memory.memoryId === "string" && memory.memoryId) ||
+      `mem0-${randomUUID()}`,
+    content:
+      (typeof memory.memory === "string" && memory.memory) ||
+      (typeof memory.text === "string" && memory.text) ||
+      "",
+    metadata,
+    relevance: typeof memory.score === "number" ? memory.score : undefined,
+  };
+}
 
 export class Mem0Provider extends BaseMemoryProvider {
   private config: Required<Mem0Config>;
@@ -20,21 +54,38 @@ export class Mem0Provider extends BaseMemoryProvider {
 
   private async getSdk(): Promise<any> {
     if (this.mem0) return this.mem0;
+
     try {
-      const mod = await import("mem0ai");
-      this.mem0 = new mod.Memory({
-        host: this.config.ollamaBaseUrl,
-        model: {
-          llm: {
-            provider: "openai",
-            model: this.config.llmModel,
-          },
-          embedder: {
-            provider: "openai",
+      const mod = await import("mem0ai/oss");
+      const Memory = mod.Memory ?? mod.default;
+      const openaiBaseUrl = withOpenAIV1Path(this.config.ollamaBaseUrl);
+
+      this.mem0 = new Memory({
+        embedder: {
+          provider: "openai",
+          config: {
             model: this.config.embedModel,
+            baseURL: openaiBaseUrl,
+            openaiBaseUrl,
           },
         },
+        vectorStore: {
+          provider: "memory",
+          config: {
+            collectionName: "opencode-memory",
+          },
+        },
+        llm: {
+          provider: "openai",
+          config: {
+            model: this.config.llmModel,
+            baseURL: openaiBaseUrl,
+            openaiBaseUrl,
+          },
+        },
+        ...(this.config.historyDbPath ? { historyDbPath: this.config.historyDbPath } : {}),
       });
+
       return this.mem0;
     } catch (error) {
       throw new Error(
@@ -52,27 +103,37 @@ export class Mem0Provider extends BaseMemoryProvider {
     );
     const result = await sdk.add(events, {
       metadata: {
+        ...extra,
         category: metadata.category,
         tags: metadata.tags ?? [],
         scope: metadata.scope ?? "global",
-        ...extra,
       },
     });
-    return { id: (result as any).id ?? `mem0-${Date.now()}` };
+
+    const created =
+      result && Array.isArray(result.results) && result.results.length > 0
+        ? toMemoryResult(result.results[0] as Record<string, unknown>)
+        : null;
+
+    return { id: created?.id ?? `mem0-${randomUUID()}` };
   }
 
   async search(query: string, opts: SearchOptions): Promise<MemoryResult[]> {
     const sdk = await this.getSdk();
-
-    const historyDbPath = this.config.historyDbPath;
-    const results = await sdk.search(query, opts.topK ?? 5, {
-      historyDbPath: historyDbPath,
+    const response = await sdk.search(query, {
+      topK: opts.topK ?? 5,
+      ...(buildSearchFilters(opts.scope, opts.category)
+        ? { filters: buildSearchFilters(opts.scope, opts.category) }
+        : {}),
     });
 
-    const memories = results as MemoryResult[];
+    const memories = Array.isArray(response?.results)
+      ? response.results.map((memory: Record<string, unknown>) => toMemoryResult(memory))
+      : [];
+
     let filtered = this.filterByScope(memories, opts.scope);
     filtered = this.filterByCategory(filtered, opts.category);
-    return filtered;
+    return this.applyLimit(filtered, opts.topK);
   }
 
   async delete(id: string): Promise<void> {
@@ -82,8 +143,17 @@ export class Mem0Provider extends BaseMemoryProvider {
 
   async list(opts: ListOptions): Promise<MemoryResult[]> {
     const sdk = await this.getSdk();
-    const results = await sdk.get_all();
-    const memories = results as MemoryResult[];
+    const response = await sdk.getAll({
+      topK: opts.limit ?? 50,
+      ...(buildSearchFilters(opts.scope, opts.category)
+        ? { filters: buildSearchFilters(opts.scope, opts.category) }
+        : {}),
+    });
+
+    const memories = Array.isArray(response?.results)
+      ? response.results.map((memory: Record<string, unknown>) => toMemoryResult(memory))
+      : [];
+
     let filtered = this.filterByScope(memories, opts.scope);
     filtered = this.filterByCategory(filtered, opts.category);
     return this.applyLimit(filtered, opts.limit ?? 50);
@@ -91,10 +161,11 @@ export class Mem0Provider extends BaseMemoryProvider {
 
   async summarize(sessionId?: string): Promise<string> {
     const sdk = await this.getSdk();
-    const results = await sdk.search("recent conversation summary", 10);
-    const memories = results as MemoryResult[];
-    return memories
-      .map((m: MemoryResult) => `[${m.metadata.category}] ${m.content}`)
-      .join("\n");
+    const response = await sdk.search("recent conversation summary", { topK: 10 });
+    const memories: MemoryResult[] = Array.isArray(response?.results)
+      ? response.results.map((memory: Record<string, unknown>) => toMemoryResult(memory))
+      : [];
+
+    return memories.map((memory) => `[${memory.metadata.category}] ${memory.content}`).join("\n");
   }
 }

@@ -1,21 +1,27 @@
-declare module "mem0ai" {
-  export interface MemoryConfig {
-    host?: string;
-    model?: {
-      llm?: { provider: string; model: string };
-      embedder?: { provider: string; model: string };
-    };
+declare module "mem0ai/oss" {
+  export interface MemoryRecord {
+    id?: string;
+    memory?: string;
+    memoryId?: string;
+    text?: string;
+    score?: number;
+    metadata?: Record<string, unknown>;
   }
-  class Memory {
-    constructor(config: MemoryConfig);
+
+  export interface SearchResult {
+    results: MemoryRecord[];
+  }
+
+  export class Memory {
+    constructor(config?: Record<string, unknown>);
     add(
-      events: { role: string; content: string }[],
-      options?: { metadata?: Record<string, unknown> }
-    ): Promise<unknown>;
-    search(query: string, limit?: number, options?: Record<string, unknown>): Promise<unknown[]>;
-    delete(id: string): Promise<void>;
-    get_all(): Promise<unknown[]>;
+      messages: string | { role: string; content: string }[],
+      config?: Record<string, unknown>
+    ): Promise<SearchResult>;
+    search(query: string, config?: Record<string, unknown>): Promise<SearchResult>;
+    getAll(config?: Record<string, unknown>): Promise<SearchResult>;
+    delete(id: string): Promise<unknown>;
   }
-  export { Memory };
+
   export default Memory;
 }

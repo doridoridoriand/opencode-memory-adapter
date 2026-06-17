@@ -6,6 +6,7 @@ OpenCode plugin that provides persistent memory functionality via multiple provi
 
 ```bash
 npm install -g opencode-memory-plugin
+npx opencode-memory-plugin init
 ```
 
 Then add to your `opencode.json`:
@@ -20,7 +21,8 @@ Restart opencode after installing.
 
 ## Configuration
 
-Create `~/.config/opencode-memory/config.json` or `.opencode-memory.json` in your project:
+Create `~/.config/opencode-memory/config.json` with `npx opencode-memory-plugin init`, or add
+`.opencode-memory.json` in your project:
 
 ```json
 {
@@ -38,6 +40,8 @@ Create `~/.config/opencode-memory/config.json` or `.opencode-memory.json` in you
 **scope**: `"global"` | `"project"` — whether memories are stored globally or per-project.
 
 ## Available Tools
+
+Primary tool identifiers use hyphenated names. Snake_case aliases are also exported for compatibility.
 
 ### memory-store
 Save a memory entry with content and metadata.

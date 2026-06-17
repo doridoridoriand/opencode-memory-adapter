@@ -1,8 +1,10 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { Mem0Provider } from "../src/providers/mem0-provider.js";
 import { HonchoProvider } from "../src/providers/honcho-provider.js";
 import { OpenVikingProvider } from "../src/providers/openviking-provider.js";
 import { createProvider } from "../src/providers/index.js";
+import { getConfig, setConfig } from "../src/memory-singleton.js";
+import { normalizeMemoryMetadata } from "../src/providers/metadata.js";
 import { loadConfig } from "../src/config.js";
 
 describe("createProvider", () => {
@@ -64,10 +66,43 @@ describe("BaseMemoryProvider helpers", () => {
   });
 });
 
+describe("normalizeMemoryMetadata", () => {
+  it("fills in defaults for missing category and scope", () => {
+    expect(normalizeMemoryMetadata({ tags: ["a"] })).toEqual({
+      category: "conversation",
+      scope: "global",
+      tags: ["a"],
+    });
+  });
+
+  it("keeps valid category and scope values", () => {
+    expect(
+      normalizeMemoryMetadata({
+        category: "decision",
+        scope: "project",
+        tags: ["memory"],
+        source: "test",
+      })
+    ).toEqual({
+      category: "decision",
+      scope: "project",
+      tags: ["memory"],
+      source: "test",
+    });
+  });
+});
+
 describe("loadConfig", () => {
   it("returns default config when no files exist", () => {
     const config = loadConfig("/nonexistent/path");
     expect(config.provider).toBe("mem0");
     expect(config.scope).toBe("global");
+  });
+});
+
+describe("runtime config", () => {
+  it("stores the loaded config for tool defaults", () => {
+    setConfig({ provider: "mem0", scope: "project" });
+    expect(getConfig().scope).toBe("project");
   });
 });

@@ -1,10 +1,39 @@
+import { randomUUID } from "node:crypto";
 import { BaseMemoryProvider } from "./base.js";
-import type { MemoryMetadata, MemoryResult, SearchOptions, ListOptions } from "../types.js";
-import type { HonchoConfig } from "../types.js";
+import { normalizeMemoryMetadata } from "./metadata.js";
+import type { HonchoConfig, ListOptions, MemoryMetadata, MemoryResult, SearchOptions } from "../types.js";
+
+const HONCHO_PEER_ID = "opencode-memory-plugin";
+
+function buildMetadata(metadata: MemoryMetadata): MemoryMetadata {
+  return normalizeMemoryMetadata({
+    ...metadata,
+    tags: metadata.tags ?? [],
+    scope: metadata.scope ?? "global",
+  });
+}
+
+function toMemoryResult(message: Record<string, unknown>): MemoryResult {
+  const metadata = normalizeMemoryMetadata(
+    typeof message.metadata === "object" && message.metadata != null
+      ? (message.metadata as Record<string, unknown>)
+      : {}
+  );
+
+  return {
+    id:
+      (typeof message.sessionId === "string" && message.sessionId) ||
+      (typeof message.id === "string" && message.id) ||
+      `honcho-${randomUUID()}`,
+    content: typeof message.content === "string" ? message.content : "",
+    metadata,
+  };
+}
 
 export class HonchoProvider extends BaseMemoryProvider {
   private config: HonchoConfig;
   private sdk: any;
+  private peer: any;
 
   constructor(config: HonchoConfig = {}) {
     super();
@@ -13,13 +42,15 @@ export class HonchoProvider extends BaseMemoryProvider {
 
   private async getSdk(): Promise<any> {
     if (this.sdk) return this.sdk;
+
     try {
-      const Honcho = await import("@honcho-ai/sdk");
-      const honcho = new Honcho.default({
+      const mod = await import("@honcho-ai/sdk");
+      const Honcho = mod.Honcho ?? mod.default;
+      this.sdk = new Honcho({
         apiKey: this.config.apiKey ?? process.env.HONCHO_API_KEY,
         baseURL: this.config.baseUrl,
+        workspaceId: this.config.workspaceId ?? "opencode",
       });
-      this.sdk = honcho;
       return this.sdk;
     } catch (error) {
       throw new Error(
@@ -29,65 +60,94 @@ export class HonchoProvider extends BaseMemoryProvider {
     }
   }
 
+  private async getPeer(): Promise<any> {
+    if (this.peer) return this.peer;
+
+    const sdk = await this.getSdk();
+    this.peer = await sdk.peer(HONCHO_PEER_ID, {
+      metadata: { source: "opencode-memory-plugin" },
+    });
+    return this.peer;
+  }
+
   async add(content: string, metadata: MemoryMetadata): Promise<{ id: string }> {
     const sdk = await this.getSdk();
-    const workspaceId = this.config.workspaceId ?? "opencode";
-    const result = await sdk.chats.createChat({
-      workspaceId,
-      messages: [{ role: "user", content }],
-      customId: metadata.tags?.[0],
+    const sessionId = `memory-${randomUUID()}`;
+    const normalizedMetadata = buildMetadata(metadata);
+    const peer = await this.getPeer();
+    const session = await sdk.session(sessionId, {
+      metadata: normalizedMetadata,
     });
-    return { id: (result as any).id ?? `honcho-${Date.now()}` };
+
+    await session.addPeers(peer);
+    await session.addMessages(
+      peer.message(content, {
+        metadata: normalizedMetadata,
+      })
+    );
+
+    return { id: sessionId };
   }
 
   async search(query: string, opts: SearchOptions): Promise<MemoryResult[]> {
     const sdk = await this.getSdk();
-    const workspaceId = this.config.workspaceId ?? "opencode";
-    const result = await sdk.chats.retrieveChats({
-      workspaceId,
-      limit: opts.topK ?? 5,
+    const results = await sdk.search(query, {
+      limit: Math.max(opts.topK ?? 5, 10),
     });
 
-    const chats: MemoryResult[] = result.map((chat: any) => ({
-      id: chat.id,
-      content: chat.messages?.[0]?.content ?? chat.customId ?? "",
-      metadata: { category: opts.category ?? "conversation", scope: opts.scope ?? "global" },
-    }));
+    const memories = Array.isArray(results)
+      ? results.map((message: Record<string, unknown>) => toMemoryResult(message))
+      : [];
 
-    let filtered = this.filterByScope(chats, opts.scope);
+    let filtered = this.filterByScope(memories, opts.scope);
     filtered = this.filterByCategory(filtered, opts.category);
     return this.applyLimit(filtered, opts.topK);
   }
 
   async delete(id: string): Promise<void> {
     const sdk = await this.getSdk();
-    const workspaceId = this.config.workspaceId ?? "opencode";
-    await sdk.chats.deleteChat(workspaceId, id);
+    const session = await sdk.session(id);
+    await session.delete();
   }
 
   async list(opts: ListOptions): Promise<MemoryResult[]> {
     const sdk = await this.getSdk();
-    const workspaceId = this.config.workspaceId ?? "opencode";
-    const result = await sdk.chats.retrieveChats({
-      workspaceId,
-      limit: opts.limit ?? 50,
+    const page = await sdk.sessions({
+      size: Math.max(opts.limit ?? 50, 50),
+      reverse: true,
     });
+    const sessions = await page.toArray();
+    const memories: MemoryResult[] = [];
 
-    const chats = result.map((chat: any) => ({
-      id: chat.id,
-      content: chat.messages?.[0]?.content ?? chat.customId ?? "",
-      metadata: { category: "conversation", scope: "global" },
-    })) as MemoryResult[];
+    for (const session of sessions) {
+      const sessionMetadata =
+        session.metadata && Object.keys(session.metadata).length > 0
+          ? session.metadata
+          : await session.getMetadata();
 
-    let filtered = this.filterByScope(chats, opts.scope);
+      const messages = await session.messages({ size: 1, reverse: true });
+      const message = messages.items[0];
+      if (!message) continue;
+
+      memories.push(
+        toMemoryResult({
+          ...message,
+          metadata:
+            message.metadata && Object.keys(message.metadata).length > 0
+              ? message.metadata
+              : sessionMetadata,
+          sessionId: session.id,
+        })
+      );
+    }
+
+    let filtered = this.filterByScope(memories, opts.scope);
     filtered = this.filterByCategory(filtered, opts.category);
     return this.applyLimit(filtered, opts.limit ?? 50);
   }
 
   async summarize(sessionId?: string): Promise<string> {
     const results = await this.search("recent conversation summary", { topK: 10 });
-    return results
-      .map((m) => `[${m.metadata.category}] ${m.content}`)
-      .join("\n");
+    return results.map((memory) => `[${memory.metadata.category}] ${memory.content}`).join("\n");
   }
 }

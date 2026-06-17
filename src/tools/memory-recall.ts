@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { tool } from "@opencode-ai/plugin";
-import { getProvider } from "../memory-singleton.js";
+import { getConfig, getProvider } from "../memory-singleton.js";
 
 export const memoryRecall = tool({
   description: "Semantically search stored memories by query.",
@@ -21,8 +21,9 @@ export const memoryRecall = tool({
   },
   async execute(args) {
     const provider = getProvider();
+    const scope = args.scope ?? getConfig().scope;
     const results = await provider.search(args.query, {
-      scope: args.scope,
+      scope,
       category: args.category,
       topK: args.topK ?? 5,
     });
