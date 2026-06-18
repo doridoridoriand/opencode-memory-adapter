@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { Mem0Provider } from "../src/providers/mem0-provider.js";
 import { HonchoProvider } from "../src/providers/honcho-provider.js";
 import { OpenVikingProvider } from "../src/providers/openviking-provider.js";
@@ -6,7 +6,6 @@ import { createProvider } from "../src/providers/index.js";
 import { getConfig, setConfig } from "../src/memory-singleton.js";
 import { normalizeMemoryMetadata } from "../src/providers/metadata.js";
 import { resolveScope } from "../src/tools/shared.js";
-import { loadConfig } from "../src/config.js";
 
 describe("createProvider", () => {
   it("creates mem0 provider by default", () => {
@@ -93,14 +92,6 @@ describe("normalizeMemoryMetadata", () => {
   });
 });
 
-describe("loadConfig", () => {
-  it("returns default config when no files exist", () => {
-    const config = loadConfig("/nonexistent/path");
-    expect(config.provider).toBe("mem0");
-    expect(config.scope).toBe("global");
-  });
-});
-
 describe("runtime config", () => {
   it("stores the loaded config for tool defaults", () => {
     setConfig({ provider: "mem0", scope: "project" });
@@ -115,5 +106,19 @@ describe("runtime config", () => {
   it("prefers an explicit scope over config", () => {
     setConfig({ provider: "mem0", scope: "global" });
     expect(resolveScope("project")).toBe("project");
+  });
+});
+
+describe("memory-singleton guards", () => {
+  it("throws if provider is read before initialization", async () => {
+    vi.resetModules();
+    const { getProvider } = await import("../src/memory-singleton.js");
+    expect(() => getProvider()).toThrow("Memory provider not initialized");
+  });
+
+  it("throws if config is read before initialization", async () => {
+    vi.resetModules();
+    const { getConfig: freshGetConfig } = await import("../src/memory-singleton.js");
+    expect(() => freshGetConfig()).toThrow("Memory config not initialized");
   });
 });

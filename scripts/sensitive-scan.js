@@ -27,6 +27,15 @@ const ALLOWED_EMAIL_DOMAINS = new Set([
   "users.noreply.github.com",
 ]);
 
+const LOCKFILES = new Set([
+  "package-lock.json",
+  "npm-shrinkwrap.json",
+  "pnpm-lock.yaml",
+  "yarn.lock",
+  "bun.lock",
+  "bun.lockb",
+]);
+
 const LINE_PATTERNS = [
   {
     id: "private-key",
@@ -122,6 +131,8 @@ function collectLineFindings(file, lineNumber, line, findings) {
   if (line.includes("sensitive-scan: allow")) return;
 
   for (const pattern of LINE_PATTERNS) {
+    if (LOCKFILES.has(file) && pattern.id === "email-address") continue;
+
     for (const match of line.matchAll(pattern.regex)) {
       const value = match[0];
       if (pattern.isAllowed(value)) continue;

@@ -129,3 +129,15 @@ npm run audit:public
 ```
 
 The pre-commit hook scans staged additions for common secrets, email addresses, and absolute home-directory paths.
+
+Run the local test suite with:
+
+```bash
+npm run test:suite
+npm run test:unit
+npm run test:e2e
+npm run test:coverage
+```
+
+GitHub Actions runs the same `build`, `test:unit`, `test:e2e`, and `test:coverage`
+commands on pull requests and pushes to `main` / `feat/**`.
