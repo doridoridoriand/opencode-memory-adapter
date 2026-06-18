@@ -12,10 +12,18 @@
   },
   "scripts": {
     "build": "tsc",
+    "hooks:install": "node scripts/install-hooks.js",
     "prepare": "npm run build",
     "prepack": "npm run build",
     "init": "node scripts/init-config.js init",
-    "test": "vitest run"
+    "scan:sensitive": "node scripts/sensitive-scan.js --tracked",
+    "scan:sensitive:staged": "node scripts/sensitive-scan.js --staged",
+    "audit:public": "node scripts/sensitive-scan.js --public-audit",
+    "test": "npm run test:suite",
+    "test:suite": "vitest run --config vitest.config.ts",
+    "test:unit": "vitest run --config vitest.unit.config.ts",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:coverage": "vitest run --config vitest.config.ts --coverage"
   },
   "peerDependencies": {
     "@opencode-ai/plugin": ">=1.0.0",
@@ -34,6 +42,7 @@
   "devDependencies": {
     "@opencode-ai/plugin": "^1.17.0",
     "@types/node": "^22.0.0",
+    "@vitest/coverage-v8": "^4.1.9",
     "typescript": "^5.7.0",
     "vitest": "^4.1.9"
   }

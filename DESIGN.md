@@ -164,7 +164,18 @@ opencode-memory-plugin/
 ├── scripts/
 │   └── init-config.js            # Explicit config initializer
 ├── test/
-│   └── providers.test.ts
+│   ├── config.test.ts
+│   ├── honcho-provider.test.ts
+│   ├── mem0-provider.test.ts
+│   ├── metadata.test.ts
+│   ├── openviking-provider.test.ts
+│   ├── plugin.e2e.test.ts
+│   ├── providers.test.ts
+│   ├── test-helpers.ts
+│   └── tools.test.ts
+├── .github/
+│   └── workflows/
+│       └── ci.yml
 └── dist/
 ```
 
