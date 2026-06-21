@@ -115,4 +115,109 @@ describe("plugin bootstrap e2e", () => {
     expect(storeOutput).toContain("Memory stored (stored-memory)");
     expect(recallOutput).toContain("Remember the release checklist");
   });
+
+  it("loads .opencode-memory.json from the worktree root even when the session starts in a subdirectory", async () => {
+    const homeDir = await makeTempDir("opencode-memory-home-");
+    const worktree = await makeTempDir("opencode-memory-worktree-");
+    const nestedDirectory = join(worktree, "packages", "app");
+    await mkdir(nestedDirectory, { recursive: true });
+    await writeJson(join(worktree, ".opencode-memory.json"), {
+      provider: "honcho",
+      scope: "project",
+      honcho: {
+        workspaceId: "root-config",
+      },
+    });
+
+    const provider = createMockProvider();
+    const createProvider = vi.fn(() => provider);
+
+    vi.doMock("node:os", async () => {
+      const actual = await vi.importActual<typeof import("node:os")>("node:os");
+      return {
+        ...actual,
+        homedir: () => homeDir,
+      };
+    });
+    vi.doMock("../src/providers/index.js", () => ({ createProvider }));
+
+    const { default: plugin } = await import("../src/index.js");
+    await plugin({
+      directory: nestedDirectory,
+      worktree,
+    } as any);
+
+    expect(createProvider).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: "honcho",
+        scope: "project",
+        honcho: {
+          workspaceId: "root-config",
+        },
+      })
+    );
+  });
+
+  it("keeps tool runtimes isolated across multiple plugin initializations", async () => {
+    const homeDir = await makeTempDir("opencode-memory-home-");
+    const firstWorktree = await makeTempDir("opencode-memory-worktree-a-");
+    const secondWorktree = await makeTempDir("opencode-memory-worktree-b-");
+    await writeJson(join(firstWorktree, ".opencode-memory.json"), {
+      provider: "mem0",
+      scope: "global",
+    });
+    await writeJson(join(secondWorktree, ".opencode-memory.json"), {
+      provider: "honcho",
+      scope: "project",
+    });
+
+    const firstProvider = createMockProvider({
+      add: vi.fn().mockResolvedValue({ id: "first-memory" }),
+    });
+    const secondProvider = createMockProvider({
+      add: vi.fn().mockResolvedValue({ id: "second-memory" }),
+    });
+    const createProvider = vi
+      .fn()
+      .mockReturnValueOnce(firstProvider)
+      .mockReturnValueOnce(secondProvider);
+
+    vi.doMock("node:os", async () => {
+      const actual = await vi.importActual<typeof import("node:os")>("node:os");
+      return {
+        ...actual,
+        homedir: () => homeDir,
+      };
+    });
+    vi.doMock("../src/providers/index.js", () => ({ createProvider }));
+
+    const { default: plugin } = await import("../src/index.js");
+    const firstHooks = await plugin({
+      directory: firstWorktree,
+      worktree: firstWorktree,
+    } as any);
+    await plugin({
+      directory: secondWorktree,
+      worktree: secondWorktree,
+    } as any);
+
+    const context = createToolContext({
+      directory: firstWorktree,
+      worktree: firstWorktree,
+    });
+    await firstHooks.tool!["memory-store"].execute(
+      {
+        content: "Remember this first",
+        category: "decision",
+      },
+      context
+    );
+
+    expect(firstProvider.add).toHaveBeenCalledWith("Remember this first", {
+      category: "decision",
+      tags: undefined,
+      scope: "global",
+    });
+    expect(secondProvider.add).not.toHaveBeenCalled();
+  });
 });

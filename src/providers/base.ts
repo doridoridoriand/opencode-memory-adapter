@@ -14,6 +14,7 @@ export abstract class BaseMemoryProvider implements MemoryProvider {
   abstract delete(id: string): Promise<void>;
   abstract list(opts: ListOptions): Promise<MemoryResult[]>;
   abstract summarize?(sessionId?: string): Promise<string>;
+  dispose?(): Promise<void> | void;
 
   protected filterByScope(results: MemoryResult[], scope?: MemoryScope): MemoryResult[] {
     if (!scope) return results;

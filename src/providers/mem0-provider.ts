@@ -1,25 +1,41 @@
 import { randomUUID } from "node:crypto";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import { BaseMemoryProvider } from "./base.js";
+import { getDefaultMem0Config } from "./mem0-defaults.js";
 import { normalizeMemoryMetadata } from "./metadata.js";
 import type { ListOptions, Mem0Config, MemoryMetadata, MemoryResult, SearchOptions } from "../types.js";
 
-const DEFAULT_MEM0_CONFIG: Required<Mem0Config> = {
-  ollamaBaseUrl: "http://localhost:11434",
-  llmModel: "qwen2.5:7b",
-  embedModel: "nomic-embed-text",
-  historyDbPath: null,
-};
+const MEM0_AGENT_ID = "opencode-memory-plugin";
 
 function withOpenAIV1Path(baseUrl: string): string {
   const trimmed = baseUrl.replace(/\/+$/, "");
   return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
 }
 
-function buildSearchFilters(scope?: string, category?: string): Record<string, unknown> | undefined {
-  const filters = Object.fromEntries(
-    Object.entries({ scope, category }).filter(([, value]) => value != null)
+function inferEmbeddingDimensions(model: string): number | undefined {
+  const normalized = model.trim().toLowerCase();
+
+  if (normalized.includes("nomic-embed-text")) {
+    return 768;
+  }
+
+  if (normalized === "text-embedding-3-small") {
+    return 1536;
+  }
+
+  return undefined;
+}
+
+function buildSearchFilters(scope?: string, category?: string): Record<string, unknown> {
+  // mem0 OSS expects snake_case entity filters under config.filters.
+  return Object.fromEntries(
+    Object.entries({
+      agent_id: MEM0_AGENT_ID,
+      scope,
+      category,
+    }).filter(([, value]) => value != null)
   );
-  return Object.keys(filters).length > 0 ? filters : undefined;
 }
 
 function toMemoryResult(memory: Record<string, unknown>): MemoryResult {
@@ -43,13 +59,91 @@ function toMemoryResult(memory: Record<string, unknown>): MemoryResult {
   };
 }
 
+function ensurePersistentStorage(config: Required<Mem0Config>): void {
+  if (config.historyDbPath) {
+    mkdirSync(dirname(config.historyDbPath), { recursive: true });
+  }
+
+  if (config.vectorStoreProvider === "qdrant") {
+    if (!config.vectorStorePath) {
+      throw new Error(
+        "mem0.vectorStorePath must be set when mem0.vectorStoreProvider is \"qdrant\"."
+      );
+    }
+    mkdirSync(config.vectorStorePath, { recursive: true });
+  }
+}
+
+function buildVectorStoreConfig(config: Required<Mem0Config>): Record<string, unknown> {
+  if (config.vectorStoreProvider === "memory") {
+    return {
+      provider: "memory",
+      config: {
+        collectionName: config.collectionName,
+      },
+    };
+  }
+
+  return {
+    provider: "qdrant",
+    config: {
+      collectionName: config.collectionName,
+      path: config.vectorStorePath,
+      onDisk: true,
+    },
+  };
+}
+
+export function buildMem0SdkConfig(config: Required<Mem0Config>): Record<string, unknown> {
+  const openaiBaseUrl = withOpenAIV1Path(config.ollamaBaseUrl);
+  const embeddingDims = inferEmbeddingDimensions(config.embedModel);
+
+  return {
+    embedder: {
+      provider: "openai",
+      config: {
+        model: config.embedModel,
+        baseURL: openaiBaseUrl,
+        openaiBaseUrl,
+        ...(embeddingDims != null ? { embeddingDims } : {}),
+      },
+    },
+    vectorStore: buildVectorStoreConfig(config),
+    llm: {
+      provider: "openai",
+      config: {
+        model: config.llmModel,
+        baseURL: openaiBaseUrl,
+        openaiBaseUrl,
+      },
+    },
+    ...(config.historyDbPath ? { historyDbPath: config.historyDbPath } : {}),
+  };
+}
+
+function extractCreatedMemoryId(result: unknown): string | null {
+  if (!result || typeof result !== "object") return null;
+
+  const records = (result as { results?: unknown }).results;
+  if (!Array.isArray(records) || records.length === 0) return null;
+
+  const created = toMemoryResult(records[0] as Record<string, unknown>);
+  if (!created.id || created.id.startsWith("mem0-")) {
+    const raw = records[0] as Record<string, unknown>;
+    if (typeof raw.id !== "string" && typeof raw.memoryId !== "string") {
+      return null;
+    }
+  }
+  return created.id;
+}
+
 export class Mem0Provider extends BaseMemoryProvider {
   private config: Required<Mem0Config>;
   private mem0: any;
 
   constructor(config: Mem0Config = {}) {
     super();
-    this.config = { ...DEFAULT_MEM0_CONFIG, ...config };
+    this.config = { ...getDefaultMem0Config(), ...config };
   }
 
   private async getSdk(): Promise<any> {
@@ -58,38 +152,17 @@ export class Mem0Provider extends BaseMemoryProvider {
     try {
       const mod = await import("mem0ai/oss");
       const Memory = mod.Memory ?? mod.default;
-      const openaiBaseUrl = withOpenAIV1Path(this.config.ollamaBaseUrl);
-
-      this.mem0 = new Memory({
-        embedder: {
-          provider: "openai",
-          config: {
-            model: this.config.embedModel,
-            baseURL: openaiBaseUrl,
-            openaiBaseUrl,
-          },
-        },
-        vectorStore: {
-          provider: "memory",
-          config: {
-            collectionName: "opencode-memory",
-          },
-        },
-        llm: {
-          provider: "openai",
-          config: {
-            model: this.config.llmModel,
-            baseURL: openaiBaseUrl,
-            openaiBaseUrl,
-          },
-        },
-        ...(this.config.historyDbPath ? { historyDbPath: this.config.historyDbPath } : {}),
-      });
+      ensurePersistentStorage(this.config);
+      this.mem0 = new Memory(buildMem0SdkConfig(this.config));
 
       return this.mem0;
     } catch (error) {
+      const installHint =
+        this.config.vectorStoreProvider === "qdrant"
+          ? "npm install mem0ai @qdrant/js-client-rest better-sqlite3"
+          : "npm install mem0ai better-sqlite3";
       throw new Error(
-        `Failed to load mem0 provider. Ensure mem0ai is installed: npm install mem0ai\n` +
+        `Failed to load mem0 provider. Ensure the required packages are installed: ${installHint}\n` +
           `Underlying error: ${(error as Error).message}`
       );
     }
@@ -102,6 +175,7 @@ export class Mem0Provider extends BaseMemoryProvider {
       Object.entries(metadata).filter(([key]) => !["category", "tags", "scope"].includes(key))
     );
     const result = await sdk.add(events, {
+      agentId: MEM0_AGENT_ID,
       metadata: {
         ...extra,
         category: metadata.category,
@@ -109,13 +183,11 @@ export class Mem0Provider extends BaseMemoryProvider {
         scope: metadata.scope ?? "global",
       },
     });
-
-    const created =
-      result && Array.isArray(result.results) && result.results.length > 0
-        ? toMemoryResult(result.results[0] as Record<string, unknown>)
-        : null;
-
-    return { id: created?.id ?? `mem0-${randomUUID()}` };
+    const createdId = extractCreatedMemoryId(result);
+    if (!createdId) {
+      throw new Error("mem0 add() succeeded without returning a memory id.");
+    }
+    return { id: createdId };
   }
 
   async search(query: string, opts: SearchOptions): Promise<MemoryResult[]> {
@@ -123,7 +195,7 @@ export class Mem0Provider extends BaseMemoryProvider {
     const filters = buildSearchFilters(opts.scope, opts.category);
     const response = await sdk.search(query, {
       topK: opts.topK ?? 5,
-      ...(filters ? { filters } : {}),
+      filters,
     });
 
     const memories = Array.isArray(response?.results)
@@ -145,7 +217,7 @@ export class Mem0Provider extends BaseMemoryProvider {
     const filters = buildSearchFilters(opts.scope, opts.category);
     const response = await sdk.getAll({
       topK: opts.limit ?? 50,
-      ...(filters ? { filters } : {}),
+      filters,
     });
 
     const memories = Array.isArray(response?.results)
@@ -159,7 +231,10 @@ export class Mem0Provider extends BaseMemoryProvider {
 
   async summarize(sessionId?: string): Promise<string> {
     const sdk = await this.getSdk();
-    const response = await sdk.search("recent conversation summary", { topK: 10 });
+    const response = await sdk.search("recent conversation summary", {
+      topK: 10,
+      filters: buildSearchFilters(undefined, "conversation"),
+    });
     const memories: MemoryResult[] = Array.isArray(response?.results)
       ? response.results.map((memory: Record<string, unknown>) => toMemoryResult(memory))
       : [];

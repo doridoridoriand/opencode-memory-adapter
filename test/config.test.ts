@@ -52,6 +52,10 @@ describe("loadConfig", () => {
         ollamaBaseUrl: "http://localhost:11434",
         llmModel: "qwen2.5:7b",
         embedModel: "nomic-embed-text",
+        historyDbPath: join(homeDir, ".local", "share", "opencode-memory", "mem0", "history.db"),
+        vectorStoreProvider: "qdrant",
+        vectorStorePath: join(homeDir, ".local", "share", "opencode-memory", "mem0", "qdrant"),
+        collectionName: "opencode-memory",
       },
     });
   });
@@ -85,6 +89,9 @@ describe("loadConfig", () => {
         llmModel: "llama3.2:latest",
         embedModel: "text-embed-local",
         historyDbPath: "/tmp/history.sqlite",
+        vectorStoreProvider: "qdrant",
+        vectorStorePath: join(homeDir, ".local", "share", "opencode-memory", "mem0", "qdrant"),
+        collectionName: "opencode-memory",
       },
     });
   });

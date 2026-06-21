@@ -3,7 +3,8 @@ import { Mem0Provider } from "../src/providers/mem0-provider.js";
 import { HonchoProvider } from "../src/providers/honcho-provider.js";
 import { OpenVikingProvider } from "../src/providers/openviking-provider.js";
 import { createProvider } from "../src/providers/index.js";
-import { getConfig, setConfig } from "../src/memory-singleton.js";
+import { getDefaultMem0Config } from "../src/providers/mem0-defaults.js";
+import { buildMem0SdkConfig } from "../src/providers/mem0-provider.js";
 import { normalizeMemoryMetadata } from "../src/providers/metadata.js";
 import { resolveScope } from "../src/tools/shared.js";
 
@@ -93,32 +94,42 @@ describe("normalizeMemoryMetadata", () => {
 });
 
 describe("runtime config", () => {
-  it("stores the loaded config for tool defaults", () => {
-    setConfig({ provider: "mem0", scope: "project" });
-    expect(getConfig().scope).toBe("project");
+  it("builds a persistent mem0 SDK config by default", () => {
+    expect(buildMem0SdkConfig(getDefaultMem0Config())).toEqual({
+      embedder: {
+        provider: "openai",
+        config: {
+          model: "nomic-embed-text",
+          baseURL: "http://localhost:11434/v1",
+          openaiBaseUrl: "http://localhost:11434/v1",
+          embeddingDims: 768,
+        },
+      },
+      vectorStore: {
+        provider: "qdrant",
+        config: {
+          collectionName: "opencode-memory",
+          path: expect.stringContaining("/opencode-memory/mem0/qdrant"),
+          onDisk: true,
+        },
+      },
+      llm: {
+        provider: "openai",
+        config: {
+          model: "qwen2.5:7b",
+          baseURL: "http://localhost:11434/v1",
+          openaiBaseUrl: "http://localhost:11434/v1",
+        },
+      },
+      historyDbPath: expect.stringContaining("/opencode-memory/mem0/history.db"),
+    });
   });
 
   it("falls back to global scope when config omits scope", () => {
-    setConfig({ provider: "mem0" });
-    expect(resolveScope(undefined)).toBe("global");
+    expect(resolveScope({ provider: "mem0" }, undefined)).toBe("global");
   });
 
   it("prefers an explicit scope over config", () => {
-    setConfig({ provider: "mem0", scope: "global" });
-    expect(resolveScope("project")).toBe("project");
-  });
-});
-
-describe("memory-singleton guards", () => {
-  it("throws if provider is read before initialization", async () => {
-    vi.resetModules();
-    const { getProvider } = await import("../src/memory-singleton.js");
-    expect(() => getProvider()).toThrow("Memory provider not initialized");
-  });
-
-  it("throws if config is read before initialization", async () => {
-    vi.resetModules();
-    const { getConfig: freshGetConfig } = await import("../src/memory-singleton.js");
-    expect(() => freshGetConfig()).toThrow("Memory config not initialized");
+    expect(resolveScope({ provider: "mem0", scope: "global" }, "project")).toBe("project");
   });
 });

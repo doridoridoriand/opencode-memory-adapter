@@ -36,6 +36,7 @@ export interface MemoryProvider {
   delete(id: string): Promise<void>;
   list(opts: ListOptions): Promise<MemoryResult[]>;
   summarize?(sessionId?: string): Promise<string>;
+  dispose?(): Promise<void> | void;
 }
 
 export interface MemoryPluginConfig {
@@ -51,6 +52,9 @@ export interface Mem0Config {
   llmModel?: string;
   embedModel?: string;
   historyDbPath?: string | null;
+  vectorStoreProvider?: "memory" | "qdrant";
+  vectorStorePath?: string | null;
+  collectionName?: string;
 }
 
 export interface HonchoConfig {

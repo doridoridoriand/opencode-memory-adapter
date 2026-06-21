@@ -31,6 +31,13 @@ function toMemoryResult(message: Record<string, unknown>): MemoryResult {
   };
 }
 
+function buildSearchFilters(scope?: string, category?: string): Record<string, unknown> | undefined {
+  const filters = Object.fromEntries(
+    Object.entries({ scope, category }).filter(([, value]) => value != null)
+  );
+  return Object.keys(filters).length > 0 ? filters : undefined;
+}
+
 async function mapWithConcurrency<T, U>(
   items: T[],
   concurrency: number,
@@ -108,8 +115,10 @@ export class HonchoProvider extends BaseMemoryProvider {
   async search(query: string, opts: SearchOptions): Promise<MemoryResult[]> {
     const sdk = await this.getSdk();
     const limit = opts.topK ?? 5;
+    const filters = buildSearchFilters(opts.scope, opts.category);
     const results = await sdk.search(query, {
-      limit: Math.max(limit, 10),
+      limit,
+      ...(filters ? { filters } : {}),
     });
 
     const memories = Array.isArray(results)
@@ -130,9 +139,11 @@ export class HonchoProvider extends BaseMemoryProvider {
   async list(opts: ListOptions): Promise<MemoryResult[]> {
     const sdk = await this.getSdk();
     const limit = opts.limit ?? 50;
+    const filters = buildSearchFilters(opts.scope, opts.category);
     const page = await sdk.sessions({
       size: limit,
       reverse: true,
+      ...(filters ? { filters } : {}),
     });
     const sessions = await page.toArray();
     const memories = (

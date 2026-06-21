@@ -5,6 +5,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 
 const CONFIG_FILE = join(homedir(), ".config", "opencode-memory", "config.json");
+const DEFAULT_MEM0_DATA_DIR = join(homedir(), ".local", "share", "opencode-memory", "mem0");
 
 const DEFAULT_CONFIG = {
   provider: "mem0",
@@ -13,7 +14,10 @@ const DEFAULT_CONFIG = {
     ollamaBaseUrl: "http://localhost:11434",
     llmModel: "qwen2.5:7b",
     embedModel: "nomic-embed-text",
-    historyDbPath: null,
+    historyDbPath: join(DEFAULT_MEM0_DATA_DIR, "history.db"),
+    vectorStoreProvider: "qdrant",
+    vectorStorePath: join(DEFAULT_MEM0_DATA_DIR, "qdrant"),
+    collectionName: "opencode-memory",
   },
   honcho: {
     apiKey: "${HONCHO_API_KEY}",
