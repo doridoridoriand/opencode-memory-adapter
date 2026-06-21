@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
+import { getDefaultMem0Config } from "./providers/mem0-defaults.js";
 import type { MemoryPluginConfig, MemoryProviderName } from "./types.js";
 
 const GLOBAL_CONFIG_PATH = join(homedir(), ".config", "opencode-memory", "config.json");
@@ -9,11 +10,7 @@ const PROJECT_CONFIG_FILENAME = ".opencode-memory.json";
 const DEFAULT_CONFIG: MemoryPluginConfig = {
   provider: "mem0",
   scope: "global",
-  mem0: {
-    ollamaBaseUrl: "http://localhost:11434",
-    llmModel: "qwen2.5:7b",
-    embedModel: "nomic-embed-text",
-  },
+  mem0: getDefaultMem0Config(),
 };
 
 function readJsonFile(path: string): object | null {

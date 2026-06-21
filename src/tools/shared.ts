@@ -1,6 +1,10 @@
-import { getConfig } from "../memory-singleton.js";
-import type { MemoryScope } from "../types.js";
+import type { MemoryPluginConfig, MemoryProvider, MemoryScope } from "../types.js";
 
-export function resolveScope(scope?: MemoryScope): MemoryScope {
-  return scope ?? getConfig().scope ?? "global";
+export interface ToolRuntime {
+  provider: MemoryProvider;
+  config: MemoryPluginConfig;
+}
+
+export function resolveScope(config: MemoryPluginConfig, scope?: MemoryScope): MemoryScope {
+  return scope ?? config.scope ?? "global";
 }

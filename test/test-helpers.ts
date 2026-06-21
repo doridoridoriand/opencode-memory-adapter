@@ -1,5 +1,12 @@
 import type { ToolContext } from "@opencode-ai/plugin";
-import type { MemoryCategory, MemoryProvider, MemoryResult, MemoryScope } from "../src/types.js";
+import type {
+  MemoryCategory,
+  MemoryPluginConfig,
+  MemoryProvider,
+  MemoryResult,
+  MemoryScope,
+} from "../src/types.js";
+import type { ToolRuntime } from "../src/tools/shared.js";
 
 export function createToolContext(overrides: Partial<ToolContext> = {}): ToolContext {
   return {
@@ -43,5 +50,15 @@ export function createMockProvider(overrides: Partial<MemoryProvider> = {}): Mem
     list: async () => [],
     summarize: async () => "",
     ...overrides,
+  };
+}
+
+export function createToolRuntime(
+  provider: MemoryProvider,
+  config: MemoryPluginConfig = { provider: "mem0", scope: "project" }
+): ToolRuntime {
+  return {
+    provider,
+    config,
   };
 }

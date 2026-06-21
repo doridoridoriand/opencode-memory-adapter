@@ -64,7 +64,7 @@ interface MemoryResult {
 
 | Provider | npm pkg | TS SDK | API Key | Local |
 |---|---|---|---|---|
-| **mem0** | `mem0ai` | ✅ | Not required | Yes (Ollama OpenAI-compatible) |
+| **mem0** | `mem0ai` + `@qdrant/js-client-rest` + `better-sqlite3` | ✅ | Not required | Yes (Ollama OpenAI-compatible) |
 | **Honcho** | `@honcho-ai/sdk` | ✅ | Yes | No |
 | **OpenViking** | `@yfedberts/huscarl` | ✅ | No | Requires OpenViking server |
 
@@ -72,6 +72,7 @@ interface MemoryResult {
 - Uses mem0 Node SDK with OpenAI provider
 - Embedding: Ollama via `openai` endpoint `http://localhost:11434/v1`
 - LLM: Ollama via same endpoint
+- Persistent vector store: local Qdrant on disk by default
 - Local-only, no data leaves machine
 
 ### Honcho (External)
@@ -97,7 +98,10 @@ Project: `.opencode-memory.json` (takes precedence)
     "ollamaBaseUrl": "http://localhost:11434",
     "llmModel": "qwen2.5:7b",
     "embedModel": "nomic-embed-text",
-    "historyDbPath": null
+    "historyDbPath": "~/.local/share/opencode-memory/mem0/history.db",
+    "vectorStoreProvider": "qdrant",
+    "vectorStorePath": "~/.local/share/opencode-memory/mem0/qdrant",
+    "collectionName": "opencode-memory"
   },
   "honcho": {
     "apiKey": "${HONCHO_API_KEY}",
@@ -121,6 +125,8 @@ Project: `.opencode-memory.json` (takes precedence)
   "peerDependencies": {
     "@opencode-ai/plugin": ">=1.0.0",
     "mem0ai": ">=3.0.0",
+    "@qdrant/js-client-rest": ">=1.18.0",
+    "better-sqlite3": ">=12.6.2",
     "@honcho-ai/sdk": ">=2.0.0",
     "@yfedberts/huscarl": ">=1.0.0"
   },
@@ -129,6 +135,8 @@ Project: `.opencode-memory.json` (takes precedence)
   },
   "peerDependenciesMeta": {
     "mem0ai": { "optional": true },
+    "@qdrant/js-client-rest": { "optional": true },
+    "better-sqlite3": { "optional": true },
     "@honcho-ai/sdk": { "optional": true },
     "@yfedberts/huscarl": { "optional": true }
   }
@@ -182,7 +190,8 @@ opencode-memory-plugin/
 ## Install Flow
 
 ```bash
-npm install -g opencode-memory-plugin mem0ai
+npm install -g opencode-memory-plugin
+npm install mem0ai @qdrant/js-client-rest better-sqlite3
 npx opencode-memory-plugin init
 # Creates ~/.config/opencode-memory/config.json on demand
 ```

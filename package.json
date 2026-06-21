@@ -11,7 +11,7 @@
     "opencode-memory-plugin": "./scripts/init-config.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc",
     "hooks:install": "node scripts/install-hooks.js",
     "prepare": "npm run build",
     "prepack": "npm run build",
@@ -28,11 +28,15 @@
   "peerDependencies": {
     "@opencode-ai/plugin": ">=1.0.0",
     "mem0ai": ">=3.0.0",
+    "@qdrant/js-client-rest": ">=1.18.0",
+    "better-sqlite3": ">=12.6.2",
     "@honcho-ai/sdk": ">=2.0.0",
     "@yfedberts/huscarl": ">=1.0.0"
   },
   "peerDependenciesMeta": {
     "mem0ai": { "optional": true },
+    "@qdrant/js-client-rest": { "optional": true },
+    "better-sqlite3": { "optional": true },
     "@honcho-ai/sdk": { "optional": true },
     "@yfedberts/huscarl": { "optional": true }
   },

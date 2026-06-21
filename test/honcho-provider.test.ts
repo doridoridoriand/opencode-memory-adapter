@@ -45,7 +45,7 @@ describe("HonchoProvider", () => {
     expect(result.id).toMatch(/^memory-/);
   });
 
-  it("searches with a minimum Honcho limit and filters results locally", async () => {
+  it("searches with server-side filters and still filters results locally", async () => {
     const sdk = {
       search: vi.fn().mockResolvedValue([
         {
@@ -69,7 +69,13 @@ describe("HonchoProvider", () => {
       topK: 3,
     });
 
-    expect(sdk.search).toHaveBeenCalledWith("project", { limit: 10 });
+    expect(sdk.search).toHaveBeenCalledWith("project", {
+      limit: 3,
+      filters: {
+        scope: "project",
+        category: "project",
+      },
+    });
     expect(results).toEqual([
       {
         id: "session-1",
@@ -155,6 +161,10 @@ describe("HonchoProvider", () => {
     expect(sdk.sessions).toHaveBeenCalledWith({
       size: 10,
       reverse: true,
+      filters: {
+        scope: "project",
+        category: "project",
+      },
     });
     expect(firstSession.getMetadata).not.toHaveBeenCalled();
     expect(secondSession.getMetadata).not.toHaveBeenCalled();

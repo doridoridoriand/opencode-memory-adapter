@@ -280,4 +280,9 @@ export class OpenVikingProvider extends BaseMemoryProvider {
     const memories = await this.search("recent conversation summary", { topK: 10 });
     return memories.map((memory) => `[${memory.metadata.category}] ${memory.content}`).join("\n");
   }
+
+  dispose(): void {
+    this.sdk?.close?.();
+    this.sdk = undefined;
+  }
 }

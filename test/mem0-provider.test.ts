@@ -1,7 +1,47 @@
 import { describe, expect, it, vi } from "vitest";
-import { Mem0Provider } from "../src/providers/mem0-provider.js";
+import { buildMem0SdkConfig, Mem0Provider } from "../src/providers/mem0-provider.js";
 
 describe("Mem0Provider", () => {
+  it("builds a persistent qdrant-backed SDK config", () => {
+    expect(
+      buildMem0SdkConfig({
+        ollamaBaseUrl: "http://localhost:11434",
+        llmModel: "qwen2.5:7b",
+        embedModel: "nomic-embed-text",
+        historyDbPath: "/tmp/memory-history.db",
+        vectorStoreProvider: "qdrant",
+        vectorStorePath: "/tmp/memory-qdrant",
+        collectionName: "plugin-memories",
+      })
+    ).toEqual({
+      embedder: {
+        provider: "openai",
+        config: {
+          model: "nomic-embed-text",
+          baseURL: "http://localhost:11434/v1",
+          openaiBaseUrl: "http://localhost:11434/v1",
+        },
+      },
+      vectorStore: {
+        provider: "qdrant",
+        config: {
+          collectionName: "plugin-memories",
+          path: "/tmp/memory-qdrant",
+          onDisk: true,
+        },
+      },
+      llm: {
+        provider: "openai",
+        config: {
+          model: "qwen2.5:7b",
+          baseURL: "http://localhost:11434/v1",
+          openaiBaseUrl: "http://localhost:11434/v1",
+        },
+      },
+      historyDbPath: "/tmp/memory-history.db",
+    });
+  });
+
   it("stores memories with normalized metadata", async () => {
     const sdk = {
       add: vi.fn().mockResolvedValue({
@@ -31,6 +71,7 @@ describe("Mem0Provider", () => {
     expect(sdk.add).toHaveBeenCalledWith(
       [{ role: "user", content: "Remember this" }],
       {
+        agentId: "opencode-memory-plugin",
         metadata: {
           source: "unit-test",
           category: "decision",
@@ -40,6 +81,31 @@ describe("Mem0Provider", () => {
       }
     );
     expect(result).toEqual({ id: "mem0-123" });
+  });
+
+  it("fails fast when mem0 does not return a memory id", async () => {
+    const sdk = {
+      add: vi.fn().mockResolvedValue({
+        results: [
+          {
+            memory: "Remember this",
+            metadata: {
+              category: "decision",
+              scope: "project",
+            },
+          },
+        ],
+      }),
+    };
+    const provider = new Mem0Provider();
+    (provider as any).getSdk = vi.fn().mockResolvedValue(sdk);
+
+    await expect(
+      provider.add("Remember this", {
+        category: "decision",
+        scope: "project",
+      })
+    ).rejects.toThrow("mem0 add() succeeded without returning a memory id");
   });
 
   it("filters search results after the SDK response", async () => {
@@ -77,6 +143,7 @@ describe("Mem0Provider", () => {
     expect(sdk.search).toHaveBeenCalledWith("project", {
       topK: 2,
       filters: {
+        agent_id: "opencode-memory-plugin",
         scope: "project",
         category: "project",
       },
@@ -119,7 +186,12 @@ describe("Mem0Provider", () => {
 
     const results = await provider.list({});
 
-    expect(sdk.getAll).toHaveBeenCalledWith({ topK: 50 });
+    expect(sdk.getAll).toHaveBeenCalledWith({
+      topK: 50,
+      filters: {
+        agent_id: "opencode-memory-plugin",
+      },
+    });
     expect(results).toEqual([
       {
         id: "memory-1",
@@ -150,11 +222,6 @@ describe("Mem0Provider", () => {
             memory: "First summary item",
             metadata: { category: "conversation", scope: "global" },
           },
-          {
-            id: "memory-2",
-            memory: "Second summary item",
-            metadata: { category: "decision", scope: "project" },
-          },
         ],
       }),
     };
@@ -165,7 +232,13 @@ describe("Mem0Provider", () => {
     const summary = await provider.summarize();
 
     expect(sdk.delete).toHaveBeenCalledWith("memory-1");
-    expect(sdk.search).toHaveBeenCalledWith("recent conversation summary", { topK: 10 });
-    expect(summary).toBe("[conversation] First summary item\n[decision] Second summary item");
+    expect(sdk.search).toHaveBeenCalledWith("recent conversation summary", {
+      topK: 10,
+      filters: {
+        agent_id: "opencode-memory-plugin",
+        category: "conversation",
+      },
+    });
+    expect(summary).toBe("[conversation] First summary item");
   });
 });

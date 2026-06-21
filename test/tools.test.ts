@@ -1,12 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { MemoryProvider } from "../src/types.js";
-import { setConfig, setProvider } from "../src/memory-singleton.js";
-import { memoryStore } from "../src/tools/memory-store.js";
-import { memoryRecall } from "../src/tools/memory-recall.js";
-import { memoryList } from "../src/tools/memory-list.js";
-import { memoryDelete } from "../src/tools/memory-delete.js";
-import { memorySummary } from "../src/tools/memory-summary.js";
-import { createMemoryResult, createToolContext } from "./test-helpers.js";
+import type { MemoryPluginConfig, MemoryProvider } from "../src/types.js";
+import { createMemoryStoreTool } from "../src/tools/memory-store.js";
+import { createMemoryRecallTool } from "../src/tools/memory-recall.js";
+import { createMemoryListTool } from "../src/tools/memory-list.js";
+import { createMemoryDeleteTool } from "../src/tools/memory-delete.js";
+import { createMemorySummaryTool } from "../src/tools/memory-summary.js";
+import { createMemoryResult, createToolContext, createToolRuntime } from "./test-helpers.js";
 
 function asProvider(overrides: Partial<MemoryProvider>): MemoryProvider {
   return {
@@ -19,21 +18,27 @@ function asProvider(overrides: Partial<MemoryProvider>): MemoryProvider {
 }
 
 const context = createToolContext();
+const config: MemoryPluginConfig = { provider: "mem0", scope: "project" };
+
+function createTools(provider: MemoryProvider) {
+  const runtime = createToolRuntime(provider, config);
+  return {
+    memoryStore: createMemoryStoreTool(runtime),
+    memoryRecall: createMemoryRecallTool(runtime),
+    memoryList: createMemoryListTool(runtime),
+    memoryDelete: createMemoryDeleteTool(runtime),
+    memorySummary: createMemorySummaryTool(runtime),
+  };
+}
 
 describe("memory tools", () => {
-  beforeEach(() => {
-    setConfig({ provider: "mem0", scope: "project" });
-  });
+  beforeEach(() => {});
 
   it("stores memories using the configured default scope", async () => {
     const add = vi.fn().mockResolvedValue({ id: "memory-1" });
-    setProvider(
-      asProvider({
-        add,
-      })
-    );
+    const tools = createTools(asProvider({ add }));
 
-    const output = await memoryStore.execute(
+    const output = await tools.memoryStore.execute(
       {
         content: "Remember this decision",
         category: "decision",
@@ -51,13 +56,9 @@ describe("memory tools", () => {
 
   it("prefers an explicit scope when storing memories", async () => {
     const add = vi.fn().mockResolvedValue({ id: "memory-2" });
-    setProvider(
-      asProvider({
-        add,
-      })
-    );
+    const tools = createTools(asProvider({ add }));
 
-    await memoryStore.execute(
+    await tools.memoryStore.execute(
       {
         content: "Global preference",
         category: "preference",
@@ -84,13 +85,9 @@ describe("memory tools", () => {
         relevance: 0.8761,
       }),
     ]);
-    setProvider(
-      asProvider({
-        search,
-      })
-    );
+    const tools = createTools(asProvider({ search }));
 
-    const output = await memoryRecall.execute(
+    const output = await tools.memoryRecall.execute(
       {
         query: "release checklist",
       },
@@ -108,13 +105,9 @@ describe("memory tools", () => {
 
   it("returns a friendly message when recall finds nothing", async () => {
     const search = vi.fn().mockResolvedValue([]);
-    setProvider(
-      asProvider({
-        search,
-      })
-    );
+    const tools = createTools(asProvider({ search }));
 
-    const output = await memoryRecall.execute(
+    const output = await tools.memoryRecall.execute(
       {
         query: "missing memory",
         topK: 3,
@@ -139,13 +132,9 @@ describe("memory tools", () => {
         scope: "project",
       }),
     ]);
-    setProvider(
-      asProvider({
-        list,
-      })
-    );
+    const tools = createTools(asProvider({ list }));
 
-    const output = await memoryList.execute(
+    const output = await tools.memoryList.execute(
       {
         category: "project",
       },
@@ -163,13 +152,9 @@ describe("memory tools", () => {
 
   it("returns a friendly message when list finds nothing", async () => {
     const list = vi.fn().mockResolvedValue([]);
-    setProvider(
-      asProvider({
-        list,
-      })
-    );
+    const tools = createTools(asProvider({ list }));
 
-    const output = await memoryList.execute(
+    const output = await tools.memoryList.execute(
       {
         scope: "global",
         limit: 2,
@@ -187,13 +172,9 @@ describe("memory tools", () => {
 
   it("deletes memories by id", async () => {
     const deleteMemory = vi.fn().mockResolvedValue(undefined);
-    setProvider(
-      asProvider({
-        delete: deleteMemory,
-      })
-    );
+    const tools = createTools(asProvider({ delete: deleteMemory }));
 
-    const output = await memoryDelete.execute(
+    const output = await tools.memoryDelete.execute(
       {
         id: "memory-9",
       },
@@ -206,13 +187,9 @@ describe("memory tools", () => {
 
   it("summarizes memories when the provider supports it", async () => {
     const summarize = vi.fn().mockResolvedValue("Summary body");
-    setProvider(
-      asProvider({
-        summarize,
-      })
-    );
+    const tools = createTools(asProvider({ summarize }));
 
-    const output = await memorySummary.execute(
+    const output = await tools.memorySummary.execute(
       {
         sessionId: "session-1",
       },
@@ -227,20 +204,16 @@ describe("memory tools", () => {
   it("returns fallback summary messages when the provider cannot summarize", async () => {
     const providerWithoutSummaries = asProvider({});
     delete (providerWithoutSummaries as Partial<MemoryProvider>).summarize;
-    setProvider(providerWithoutSummaries);
+    const toolsWithoutSummary = createTools(providerWithoutSummaries);
 
-    await expect(memorySummary.execute({}, context)).resolves.toBe(
+    await expect(toolsWithoutSummary.memorySummary.execute({}, context)).resolves.toBe(
       "summarize is not supported by the current memory provider."
     );
 
     const summarize = vi.fn().mockResolvedValue("");
-    setProvider(
-      asProvider({
-        summarize,
-      })
-    );
+    const tools = createTools(asProvider({ summarize }));
 
-    await expect(memorySummary.execute({}, context)).resolves.toBe(
+    await expect(tools.memorySummary.execute({}, context)).resolves.toBe(
       "No recent memories to summarize."
     );
   });

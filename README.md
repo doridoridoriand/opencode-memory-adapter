@@ -6,6 +6,7 @@ OpenCode plugin that provides persistent memory functionality via multiple provi
 
 ```bash
 npm install -g opencode-memory-plugin
+npm install mem0ai @qdrant/js-client-rest better-sqlite3
 npx opencode-memory-plugin init
 ```
 
@@ -31,7 +32,11 @@ Create `~/.config/opencode-memory/config.json` with `npx opencode-memory-plugin 
   "mem0": {
     "ollamaBaseUrl": "http://localhost:11434",
     "llmModel": "qwen2.5:7b",
-    "embedModel": "nomic-embed-text"
+    "embedModel": "nomic-embed-text",
+    "historyDbPath": "~/.local/share/opencode-memory/mem0/history.db",
+    "vectorStoreProvider": "qdrant",
+    "vectorStorePath": "~/.local/share/opencode-memory/mem0/qdrant",
+    "collectionName": "opencode-memory"
   }
 }
 ```
@@ -90,11 +95,14 @@ sessionId: string (optional, provider-specific hint)
 ## Providers
 
 ### mem0 (Default)
-Local-only, uses Ollama for embeddings. Requires `mem0ai` peer dependency.
+Local-only, uses Ollama for embeddings and persists data to a local Qdrant store by default.
+Requires the `mem0ai`, `@qdrant/js-client-rest`, and `better-sqlite3` peer dependencies.
 
 ```bash
-npm install mem0ai
+npm install mem0ai @qdrant/js-client-rest better-sqlite3
 ```
+
+Set `"vectorStoreProvider": "memory"` only if you explicitly want ephemeral in-memory storage.
 
 ### Honcho
 Cloud-based memory. Requires `@honcho-ai/sdk` and an API key.
