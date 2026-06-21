@@ -20,6 +20,7 @@ describe("Mem0Provider", () => {
           model: "nomic-embed-text",
           baseURL: "http://localhost:11434/v1",
           openaiBaseUrl: "http://localhost:11434/v1",
+          embeddingDims: 768,
         },
       },
       vectorStore: {

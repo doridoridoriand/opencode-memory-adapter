@@ -13,7 +13,22 @@ function withOpenAIV1Path(baseUrl: string): string {
   return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
 }
 
+function inferEmbeddingDimensions(model: string): number | undefined {
+  const normalized = model.trim().toLowerCase();
+
+  if (normalized.includes("nomic-embed-text")) {
+    return 768;
+  }
+
+  if (normalized === "text-embedding-3-small") {
+    return 1536;
+  }
+
+  return undefined;
+}
+
 function buildSearchFilters(scope?: string, category?: string): Record<string, unknown> {
+  // mem0 OSS expects snake_case entity filters under config.filters.
   return Object.fromEntries(
     Object.entries({
       agent_id: MEM0_AGENT_ID,
@@ -81,6 +96,7 @@ function buildVectorStoreConfig(config: Required<Mem0Config>): Record<string, un
 
 export function buildMem0SdkConfig(config: Required<Mem0Config>): Record<string, unknown> {
   const openaiBaseUrl = withOpenAIV1Path(config.ollamaBaseUrl);
+  const embeddingDims = inferEmbeddingDimensions(config.embedModel);
 
   return {
     embedder: {
@@ -89,6 +105,7 @@ export function buildMem0SdkConfig(config: Required<Mem0Config>): Record<string,
         model: config.embedModel,
         baseURL: openaiBaseUrl,
         openaiBaseUrl,
+        ...(embeddingDims != null ? { embeddingDims } : {}),
       },
     },
     vectorStore: buildVectorStoreConfig(config),
