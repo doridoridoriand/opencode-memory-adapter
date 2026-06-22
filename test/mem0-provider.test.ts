@@ -29,6 +29,7 @@ describe("Mem0Provider", () => {
         provider: "memory",
         config: {
           collectionName: "plugin-memories",
+          dimension: 768,
           dbPath: "/tmp/vector_store.db",
         },
       },
@@ -71,6 +72,7 @@ describe("Mem0Provider", () => {
         provider: "qdrant",
         config: {
           collectionName: "plugin-memories",
+          dimension: 768,
           url: "http://127.0.0.1:6333",
           apiKey: "secret",
         },

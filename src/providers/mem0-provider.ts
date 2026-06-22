@@ -90,13 +90,17 @@ function ensurePersistentStorage(config: Required<Mem0Config>): void {
   }
 }
 
-function buildVectorStoreConfig(config: Required<Mem0Config>): Record<string, unknown> {
+function buildVectorStoreConfig(
+  config: Required<Mem0Config>,
+  embeddingDims?: number
+): Record<string, unknown> {
   if (config.vectorStoreProvider === "memory") {
     const vectorStorePath = normalizeOptionalString(config.vectorStorePath);
     return {
       provider: "memory",
       config: {
         collectionName: config.collectionName,
+        ...(embeddingDims != null ? { dimension: embeddingDims } : {}),
         ...(vectorStorePath ? { dbPath: vectorStorePath } : {}),
       },
     };
@@ -115,6 +119,7 @@ function buildVectorStoreConfig(config: Required<Mem0Config>): Record<string, un
     provider: "qdrant",
     config: {
       collectionName: config.collectionName,
+      ...(embeddingDims != null ? { dimension: embeddingDims } : {}),
       url: vectorStoreUrl,
       ...(vectorStoreApiKey ? { apiKey: vectorStoreApiKey } : {}),
     },
@@ -135,7 +140,7 @@ export function buildMem0SdkConfig(config: Required<Mem0Config>): Record<string,
         ...(embeddingDims != null ? { embeddingDims } : {}),
       },
     },
-    vectorStore: buildVectorStoreConfig(config),
+    vectorStore: buildVectorStoreConfig(config, embeddingDims),
     llm: {
       provider: "openai",
       config: {

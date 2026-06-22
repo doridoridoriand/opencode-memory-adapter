@@ -109,6 +109,7 @@ describe("runtime config", () => {
         provider: "memory",
         config: {
           collectionName: "opencode-memory-adapter",
+          dimension: 768,
           dbPath: expect.stringContaining("/opencode-memory-adapter/mem0/vector_store.db"),
         },
       },
@@ -146,6 +147,7 @@ describe("runtime config", () => {
         provider: "qdrant",
         config: {
           collectionName: "opencode-memory-adapter",
+          dimension: 768,
           url: "http://127.0.0.1:6333",
           apiKey: "secret",
         },
