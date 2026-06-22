@@ -27,9 +27,9 @@ afterEach(async () => {
 
 describe("plugin bootstrap e2e", () => {
   it("loads project config, initializes the provider, and exposes tool aliases", async () => {
-    const homeDir = await makeTempDir("opencode-memory-home-");
-    const worktree = await makeTempDir("opencode-memory-worktree-");
-    await writeJson(join(worktree, ".opencode-memory.json"), {
+    const homeDir = await makeTempDir("opencode-memory-adapter-home-");
+    const worktree = await makeTempDir("opencode-memory-adapter-worktree-");
+    await writeJson(join(worktree, ".opencode-memory-adapter.json"), {
       provider: "mem0",
       scope: "project",
     });
@@ -116,12 +116,12 @@ describe("plugin bootstrap e2e", () => {
     expect(recallOutput).toContain("Remember the release checklist");
   });
 
-  it("loads .opencode-memory.json from the worktree root even when the session starts in a subdirectory", async () => {
-    const homeDir = await makeTempDir("opencode-memory-home-");
-    const worktree = await makeTempDir("opencode-memory-worktree-");
+  it("loads .opencode-memory-adapter.json from the worktree root even when the session starts in a subdirectory", async () => {
+    const homeDir = await makeTempDir("opencode-memory-adapter-home-");
+    const worktree = await makeTempDir("opencode-memory-adapter-worktree-");
     const nestedDirectory = join(worktree, "packages", "app");
     await mkdir(nestedDirectory, { recursive: true });
-    await writeJson(join(worktree, ".opencode-memory.json"), {
+    await writeJson(join(worktree, ".opencode-memory-adapter.json"), {
       provider: "honcho",
       scope: "project",
       honcho: {
@@ -159,14 +159,14 @@ describe("plugin bootstrap e2e", () => {
   });
 
   it("keeps tool runtimes isolated across multiple plugin initializations", async () => {
-    const homeDir = await makeTempDir("opencode-memory-home-");
-    const firstWorktree = await makeTempDir("opencode-memory-worktree-a-");
-    const secondWorktree = await makeTempDir("opencode-memory-worktree-b-");
-    await writeJson(join(firstWorktree, ".opencode-memory.json"), {
+    const homeDir = await makeTempDir("opencode-memory-adapter-home-");
+    const firstWorktree = await makeTempDir("opencode-memory-adapter-worktree-a-");
+    const secondWorktree = await makeTempDir("opencode-memory-adapter-worktree-b-");
+    await writeJson(join(firstWorktree, ".opencode-memory-adapter.json"), {
       provider: "mem0",
       scope: "global",
     });
-    await writeJson(join(secondWorktree, ".opencode-memory.json"), {
+    await writeJson(join(secondWorktree, ".opencode-memory-adapter.json"), {
       provider: "honcho",
       scope: "project",
     });

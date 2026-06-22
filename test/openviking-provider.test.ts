@@ -48,14 +48,17 @@ describe("OpenVikingProvider", () => {
     expect(result.id).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     );
-    expect(resources.createDirectory).toHaveBeenNthCalledWith(1, "opencode-memory");
-    expect(resources.createDirectory).toHaveBeenNthCalledWith(2, "opencode-memory/project");
+    expect(resources.createDirectory).toHaveBeenNthCalledWith(1, "opencode-memory-adapter");
+    expect(resources.createDirectory).toHaveBeenNthCalledWith(
+      2,
+      "opencode-memory-adapter/project"
+    );
     expect(resources.createDirectory).toHaveBeenNthCalledWith(
       3,
-      "opencode-memory/project/decision"
+      "opencode-memory-adapter/project/decision"
     );
     expect(resources.add).toHaveBeenCalledWith(expect.any(String), {
-      target: "opencode-memory/project/decision/",
+      target: "opencode-memory-adapter/project/decision/",
       wait: true,
     });
 
@@ -69,7 +72,7 @@ describe("OpenVikingProvider", () => {
     const resources = {
       read: vi.fn(async (path: string) => {
         if (path.endsWith("/keep.md")) {
-          return '<!-- opencode-memory:{"category":"decision","scope":"project","tags":["release"]} -->\nShip release notes';
+          return '<!-- opencode-memory-adapter:{"category":"decision","scope":"project","tags":["release"]} -->\nShip release notes';
         }
         return "Legacy text memory";
       }),
@@ -82,11 +85,11 @@ describe("OpenVikingProvider", () => {
       find: vi.fn().mockResolvedValue({
         resources: [
           {
-            uri: "viking://resources/opencode-memory/project/decision/keep.md",
+            uri: "viking://resources/opencode-memory-adapter/project/decision/keep.md",
             score: 0.88,
           },
           {
-            uri: "viking://resources/opencode-memory/global/conversation/skip.md",
+            uri: "viking://resources/opencode-memory-adapter/global/conversation/skip.md",
             score: 0.25,
           },
           {
@@ -106,7 +109,7 @@ describe("OpenVikingProvider", () => {
     });
 
     expect(retrieval.find).toHaveBeenCalledWith("release", {
-      targetUri: "viking://resources/opencode-memory/project/decision",
+      targetUri: "viking://resources/opencode-memory-adapter/project/decision",
       limit: 2,
     });
     expect(results).toEqual([
@@ -151,31 +154,31 @@ describe("OpenVikingProvider", () => {
     const resources = {
       list: vi.fn().mockResolvedValue([
         {
-          uri: "viking://resources/opencode-memory/project/decision/older.md",
+          uri: "viking://resources/opencode-memory-adapter/project/decision/older.md",
           isDir: false,
           modTime: "2025-01-01T00:00:00.000Z",
         },
         {
-          uri: "viking://resources/opencode-memory/project/decision/newer.md",
+          uri: "viking://resources/opencode-memory-adapter/project/decision/newer.md",
           isDir: false,
           modTime: "2025-01-02T00:00:00.000Z",
         },
         {
-          uri: "viking://resources/opencode-memory/project/decision",
+          uri: "viking://resources/opencode-memory-adapter/project/decision",
           isDir: true,
           modTime: "2025-01-03T00:00:00.000Z",
         },
         {
-          uri: "viking://resources/opencode-memory/project/decision/ignore.txt",
+          uri: "viking://resources/opencode-memory-adapter/project/decision/ignore.txt",
           isDir: false,
           modTime: "2025-01-04T00:00:00.000Z",
         },
       ]),
       read: vi.fn(async (path: string) => {
         if (path.endsWith("/newer.md")) {
-          return '<!-- opencode-memory:{"category":"decision","scope":"project"} -->\nNewer memory';
+          return '<!-- opencode-memory-adapter:{"category":"decision","scope":"project"} -->\nNewer memory';
         }
-        return '<!-- opencode-memory:{"category":"decision","scope":"project"} -->\nOlder memory';
+        return '<!-- opencode-memory-adapter:{"category":"decision","scope":"project"} -->\nOlder memory';
       }),
       remove: vi.fn(),
       createDirectory: vi.fn(),
@@ -193,7 +196,7 @@ describe("OpenVikingProvider", () => {
       limit: 1,
     });
 
-    expect(resources.list).toHaveBeenCalledWith("opencode-memory/project/decision", {
+    expect(resources.list).toHaveBeenCalledWith("opencode-memory-adapter/project/decision", {
       recursive: true,
     });
     expect(results).toEqual([
@@ -212,7 +215,7 @@ describe("OpenVikingProvider", () => {
     const resources = {
       list: vi.fn().mockResolvedValue([
         {
-          uri: "viking://resources/opencode-memory/project/decision/delete-me.md",
+          uri: "viking://resources/opencode-memory-adapter/project/decision/delete-me.md",
           isDir: false,
         },
       ]),
@@ -242,9 +245,9 @@ describe("OpenVikingProvider", () => {
     await provider.delete("delete-me");
     const summary = await provider.summarize();
 
-    expect(resources.list).toHaveBeenCalledWith("opencode-memory", { recursive: true });
+    expect(resources.list).toHaveBeenCalledWith("opencode-memory-adapter", { recursive: true });
     expect(resources.remove).toHaveBeenCalledWith(
-      "opencode-memory/project/decision/delete-me.md"
+      "opencode-memory-adapter/project/decision/delete-me.md"
     );
     expect(summary).toBe("[conversation] Recent conversation\n[decision] Recent decision");
   });

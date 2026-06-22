@@ -6,11 +6,20 @@ import { getDefaultMem0Config } from "./mem0-defaults.js";
 import { normalizeMemoryMetadata } from "./metadata.js";
 import type { ListOptions, Mem0Config, MemoryMetadata, MemoryResult, SearchOptions } from "../types.js";
 
-const MEM0_AGENT_ID = "opencode-memory-plugin";
+const MEM0_AGENT_ID = "opencode-memory-adapter";
 
 function withOpenAIV1Path(baseUrl: string): string {
   const trimmed = baseUrl.replace(/\/+$/, "");
   return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
+}
+
+function normalizeOptionalString(value: string | null | undefined): string | null {
+  if (typeof value !== "string") {
+    return value ?? null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function inferEmbeddingDimensions(model: string): number | undefined {
@@ -60,36 +69,59 @@ function toMemoryResult(memory: Record<string, unknown>): MemoryResult {
 }
 
 function ensurePersistentStorage(config: Required<Mem0Config>): void {
-  if (config.historyDbPath) {
-    mkdirSync(dirname(config.historyDbPath), { recursive: true });
+  const historyDbPath = normalizeOptionalString(config.historyDbPath);
+  if (historyDbPath) {
+    mkdirSync(dirname(historyDbPath), { recursive: true });
   }
 
-  if (config.vectorStoreProvider === "qdrant") {
-    if (!config.vectorStorePath) {
-      throw new Error(
-        "mem0.vectorStorePath must be set when mem0.vectorStoreProvider is \"qdrant\"."
-      );
+  const vectorStorePath = normalizeOptionalString(config.vectorStorePath);
+  if (config.vectorStoreProvider === "memory") {
+    if (vectorStorePath) {
+      mkdirSync(dirname(vectorStorePath), { recursive: true });
     }
-    mkdirSync(config.vectorStorePath, { recursive: true });
+    return;
+  }
+
+  if (!normalizeOptionalString(config.vectorStoreUrl)) {
+    throw new Error(
+      "mem0.vectorStoreUrl must be set when mem0.vectorStoreProvider is \"qdrant\". " +
+        "Use mem0.vectorStoreProvider = \"memory\" for local SQLite-backed persistence."
+    );
   }
 }
 
-function buildVectorStoreConfig(config: Required<Mem0Config>): Record<string, unknown> {
+function buildVectorStoreConfig(
+  config: Required<Mem0Config>,
+  embeddingDims?: number
+): Record<string, unknown> {
   if (config.vectorStoreProvider === "memory") {
+    const vectorStorePath = normalizeOptionalString(config.vectorStorePath);
     return {
       provider: "memory",
       config: {
         collectionName: config.collectionName,
+        ...(embeddingDims != null ? { dimension: embeddingDims } : {}),
+        ...(vectorStorePath ? { dbPath: vectorStorePath } : {}),
       },
     };
+  }
+
+  const vectorStoreUrl = normalizeOptionalString(config.vectorStoreUrl);
+  const vectorStoreApiKey = normalizeOptionalString(config.vectorStoreApiKey);
+  if (!vectorStoreUrl) {
+    throw new Error(
+      "mem0.vectorStoreUrl must be set when mem0.vectorStoreProvider is \"qdrant\". " +
+        "Use mem0.vectorStoreProvider = \"memory\" for local SQLite-backed persistence."
+    );
   }
 
   return {
     provider: "qdrant",
     config: {
       collectionName: config.collectionName,
-      path: config.vectorStorePath,
-      onDisk: true,
+      ...(embeddingDims != null ? { dimension: embeddingDims } : {}),
+      url: vectorStoreUrl,
+      ...(vectorStoreApiKey ? { apiKey: vectorStoreApiKey } : {}),
     },
   };
 }
@@ -108,7 +140,7 @@ export function buildMem0SdkConfig(config: Required<Mem0Config>): Record<string,
         ...(embeddingDims != null ? { embeddingDims } : {}),
       },
     },
-    vectorStore: buildVectorStoreConfig(config),
+    vectorStore: buildVectorStoreConfig(config, embeddingDims),
     llm: {
       provider: "openai",
       config: {
