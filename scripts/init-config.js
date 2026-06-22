@@ -15,18 +15,18 @@ const DEFAULT_CONFIG = {
     llmModel: "qwen2.5:7b",
     embedModel: "nomic-embed-text",
     historyDbPath: join(DEFAULT_MEM0_DATA_DIR, "history.db"),
-    vectorStoreProvider: "qdrant",
-    vectorStorePath: join(DEFAULT_MEM0_DATA_DIR, "qdrant"),
+    vectorStoreProvider: "memory",
+    vectorStorePath: join(DEFAULT_MEM0_DATA_DIR, "vector_store.db"),
     collectionName: "opencode-memory",
   },
   honcho: {
     apiKey: "${HONCHO_API_KEY}",
-    baseUrl: "http://localhost:8000",
+    baseUrl: "https://api.honcho.dev",
     workspaceId: "opencode",
   },
   openviking: {
     url: "http://localhost:1933",
-    apiKey: "",
+    apiKey: "${OPENVIKING_API_KEY}",
   },
 };
 

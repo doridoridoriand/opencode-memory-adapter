@@ -14,8 +14,10 @@ export function getDefaultMem0Config(): Required<Mem0Config> {
     llmModel: "qwen2.5:7b",
     embedModel: "nomic-embed-text",
     historyDbPath: join(DEFAULT_MEM0_DATA_DIR, "history.db"),
-    vectorStoreProvider: "qdrant",
-    vectorStorePath: join(DEFAULT_MEM0_DATA_DIR, "qdrant"),
+    vectorStoreProvider: "memory",
+    vectorStorePath: join(DEFAULT_MEM0_DATA_DIR, "vector_store.db"),
+    vectorStoreUrl: null,
+    vectorStoreApiKey: null,
     collectionName: "opencode-memory",
   };
 }

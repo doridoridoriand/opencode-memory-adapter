@@ -6,7 +6,7 @@
   "type": "module",
   "main": "dist/index.js",
   "exports": "./dist/index.js",
-  "files": ["dist", "scripts", "README.md", "LICENSE"],
+  "files": ["dist", "scripts", "docs", "README.md", "LICENSE"],
   "bin": {
     "opencode-memory-plugin": "./scripts/init-config.js"
   },
@@ -23,7 +23,9 @@
     "test:suite": "vitest run --config vitest.config.ts",
     "test:unit": "vitest run --config vitest.unit.config.ts",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
-    "test:coverage": "vitest run --config vitest.config.ts --coverage"
+    "test:coverage": "vitest run --config vitest.config.ts --coverage",
+    "test:smoke:mem0": "node scripts/smoke-mem0.js",
+    "test:smoke:k8s": "node scripts/smoke-k8s-providers.js"
   },
   "peerDependencies": {
     "@opencode-ai/plugin": ">=1.0.0",

@@ -106,11 +106,48 @@ describe("runtime config", () => {
         },
       },
       vectorStore: {
+        provider: "memory",
+        config: {
+          collectionName: "opencode-memory",
+          dbPath: expect.stringContaining("/opencode-memory/mem0/vector_store.db"),
+        },
+      },
+      llm: {
+        provider: "openai",
+        config: {
+          model: "qwen2.5:7b",
+          baseURL: "http://localhost:11434/v1",
+          openaiBaseUrl: "http://localhost:11434/v1",
+        },
+      },
+      historyDbPath: expect.stringContaining("/opencode-memory/mem0/history.db"),
+    });
+  });
+
+  it("builds a qdrant SDK config when an explicit server URL is configured", () => {
+    expect(
+      buildMem0SdkConfig({
+        ...getDefaultMem0Config(),
+        vectorStoreProvider: "qdrant",
+        vectorStoreUrl: "http://127.0.0.1:6333",
+        vectorStoreApiKey: "secret",
+      })
+    ).toEqual({
+      embedder: {
+        provider: "openai",
+        config: {
+          model: "nomic-embed-text",
+          baseURL: "http://localhost:11434/v1",
+          openaiBaseUrl: "http://localhost:11434/v1",
+          embeddingDims: 768,
+        },
+      },
+      vectorStore: {
         provider: "qdrant",
         config: {
           collectionName: "opencode-memory",
-          path: expect.stringContaining("/opencode-memory/mem0/qdrant"),
-          onDisk: true,
+          url: "http://127.0.0.1:6333",
+          apiKey: "secret",
         },
       },
       llm: {

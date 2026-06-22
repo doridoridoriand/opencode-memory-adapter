@@ -2,7 +2,49 @@ import { describe, expect, it, vi } from "vitest";
 import { buildMem0SdkConfig, Mem0Provider } from "../src/providers/mem0-provider.js";
 
 describe("Mem0Provider", () => {
-  it("builds a persistent qdrant-backed SDK config", () => {
+  it("builds a persistent SQLite-backed SDK config", () => {
+    expect(
+      buildMem0SdkConfig({
+        ollamaBaseUrl: "http://localhost:11434",
+        llmModel: "qwen2.5:7b",
+        embedModel: "nomic-embed-text",
+        historyDbPath: "/tmp/memory-history.db",
+        vectorStoreProvider: "memory",
+        vectorStorePath: "/tmp/vector_store.db",
+        vectorStoreUrl: null,
+        vectorStoreApiKey: null,
+        collectionName: "plugin-memories",
+      })
+    ).toEqual({
+      embedder: {
+        provider: "openai",
+        config: {
+          model: "nomic-embed-text",
+          baseURL: "http://localhost:11434/v1",
+          openaiBaseUrl: "http://localhost:11434/v1",
+          embeddingDims: 768,
+        },
+      },
+      vectorStore: {
+        provider: "memory",
+        config: {
+          collectionName: "plugin-memories",
+          dbPath: "/tmp/vector_store.db",
+        },
+      },
+      llm: {
+        provider: "openai",
+        config: {
+          model: "qwen2.5:7b",
+          baseURL: "http://localhost:11434/v1",
+          openaiBaseUrl: "http://localhost:11434/v1",
+        },
+      },
+      historyDbPath: "/tmp/memory-history.db",
+    });
+  });
+
+  it("builds a qdrant-backed SDK config when a server URL is provided", () => {
     expect(
       buildMem0SdkConfig({
         ollamaBaseUrl: "http://localhost:11434",
@@ -10,7 +52,9 @@ describe("Mem0Provider", () => {
         embedModel: "nomic-embed-text",
         historyDbPath: "/tmp/memory-history.db",
         vectorStoreProvider: "qdrant",
-        vectorStorePath: "/tmp/memory-qdrant",
+        vectorStorePath: null,
+        vectorStoreUrl: "http://127.0.0.1:6333",
+        vectorStoreApiKey: "secret",
         collectionName: "plugin-memories",
       })
     ).toEqual({
@@ -27,8 +71,8 @@ describe("Mem0Provider", () => {
         provider: "qdrant",
         config: {
           collectionName: "plugin-memories",
-          path: "/tmp/memory-qdrant",
-          onDisk: true,
+          url: "http://127.0.0.1:6333",
+          apiKey: "secret",
         },
       },
       llm: {
@@ -41,6 +85,22 @@ describe("Mem0Provider", () => {
       },
       historyDbPath: "/tmp/memory-history.db",
     });
+  });
+
+  it("requires a qdrant server URL when qdrant is selected", () => {
+    expect(() =>
+      buildMem0SdkConfig({
+        ollamaBaseUrl: "http://localhost:11434",
+        llmModel: "qwen2.5:7b",
+        embedModel: "nomic-embed-text",
+        historyDbPath: "/tmp/memory-history.db",
+        vectorStoreProvider: "qdrant",
+        vectorStorePath: "/tmp/legacy-qdrant-path",
+        vectorStoreUrl: null,
+        vectorStoreApiKey: null,
+        collectionName: "plugin-memories",
+      })
+    ).toThrow('mem0.vectorStoreUrl must be set when mem0.vectorStoreProvider is "qdrant"');
   });
 
   it("stores memories with normalized metadata", async () => {

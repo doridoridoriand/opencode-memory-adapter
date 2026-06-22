@@ -6,7 +6,24 @@ OpenCode plugin that provides persistent memory functionality via multiple provi
 
 ```bash
 npm install -g opencode-memory-plugin
-npm install mem0ai @qdrant/js-client-rest better-sqlite3
+```
+
+Install the peer dependencies for the provider you plan to use:
+
+```bash
+# mem0 (local-first, default)
+npm install mem0ai better-sqlite3
+
+# Honcho (managed or self-hosted)
+npm install @honcho-ai/sdk
+
+# OpenViking (self-hosted server)
+npm install @yfedberts/huscarl
+```
+
+Then generate the starter config:
+
+```bash
 npx opencode-memory-plugin init
 ```
 
@@ -34,8 +51,8 @@ Create `~/.config/opencode-memory/config.json` with `npx opencode-memory-plugin 
     "llmModel": "qwen2.5:7b",
     "embedModel": "nomic-embed-text",
     "historyDbPath": "~/.local/share/opencode-memory/mem0/history.db",
-    "vectorStoreProvider": "qdrant",
-    "vectorStorePath": "~/.local/share/opencode-memory/mem0/qdrant",
+    "vectorStoreProvider": "memory",
+    "vectorStorePath": "~/.local/share/opencode-memory/mem0/vector_store.db",
     "collectionName": "opencode-memory"
   }
 }
@@ -43,6 +60,32 @@ Create `~/.config/opencode-memory/config.json` with `npx opencode-memory-plugin 
 
 **provider**: `"mem0"` | `"honcho"` | `"openviking"` — which memory provider to use.
 **scope**: `"global"` | `"project"` — whether memories are stored globally or per-project.
+
+## Setup Guides
+
+If you want step-by-step setup instructions, use the provider guides:
+
+- [Provider setup overview](./docs/providers/README.md)
+- [mem0 setup](./docs/providers/mem0.md)
+- [Honcho setup](./docs/providers/honcho.md)
+- [OpenViking setup](./docs/providers/openviking.md)
+
+For most users:
+
+- Choose `mem0` if you want the simplest local setup and are already comfortable running Ollama.
+- Choose `honcho` if you want managed memory with the least infrastructure to operate yourself.
+- Choose `openviking` if you already run OpenViking or want a self-hosted server with a filesystem-style resource model.
+
+## Quick Verification
+
+After changing the config:
+
+1. Restart OpenCode so it reloads the plugin and provider config.
+2. Store a test memory, for example: "Remember that the staging branch deploys to us-west-2."
+3. Immediately recall it with a query like: "What did I say about the staging branch?"
+4. Confirm that `memory-list` shows the stored item and `memory-delete` can remove it.
+
+If the provider-specific setup is correct, store and recall should work in the same session without any extra migration step.
 
 ## Available Tools
 
@@ -95,14 +138,33 @@ sessionId: string (optional, provider-specific hint)
 ## Providers
 
 ### mem0 (Default)
-Local-only, uses Ollama for embeddings and persists data to a local Qdrant store by default.
-Requires the `mem0ai`, `@qdrant/js-client-rest`, and `better-sqlite3` peer dependencies.
+Local-only by default, uses Ollama for embeddings and persists data to a local SQLite-backed vector store.
+Requires the `mem0ai` and `better-sqlite3` peer dependencies.
+
+```bash
+npm install mem0ai better-sqlite3
+```
+
+If you want Qdrant instead, point `mem0.vectorStoreUrl` at a running Qdrant server and install:
 
 ```bash
 npm install mem0ai @qdrant/js-client-rest better-sqlite3
 ```
 
-Set `"vectorStoreProvider": "memory"` only if you explicitly want ephemeral in-memory storage.
+Example:
+
+```json
+{
+  "provider": "mem0",
+  "mem0": {
+    "vectorStoreProvider": "qdrant",
+    "vectorStoreUrl": "http://127.0.0.1:6333",
+    "collectionName": "opencode-memory"
+  }
+}
+```
+
+Full guide: [docs/providers/mem0.md](./docs/providers/mem0.md)
 
 ### Honcho
 Cloud-based memory. Requires `@honcho-ai/sdk` and an API key.
@@ -111,12 +173,16 @@ Cloud-based memory. Requires `@honcho-ai/sdk` and an API key.
 npm install @honcho-ai/sdk
 ```
 
+Full guide: [docs/providers/honcho.md](./docs/providers/honcho.md)
+
 ### OpenViking
 Server-based memory. Requires `@yfedberts/huscarl` and a running OpenViking server.
 
 ```bash
 npm install @yfedberts/huscarl
 ```
+
+Full guide: [docs/providers/openviking.md](./docs/providers/openviking.md)
 
 ## License
 
@@ -145,6 +211,8 @@ npm run test:suite
 npm run test:unit
 npm run test:e2e
 npm run test:coverage
+npm run test:smoke:mem0
+npm run test:smoke:k8s
 ```
 
 GitHub Actions runs the same `build`, `test:unit`, `test:e2e`, and `test:coverage`

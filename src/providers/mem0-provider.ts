@@ -13,6 +13,15 @@ function withOpenAIV1Path(baseUrl: string): string {
   return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
 }
 
+function normalizeOptionalString(value: string | null | undefined): string | null {
+  if (typeof value !== "string") {
+    return value ?? null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 function inferEmbeddingDimensions(model: string): number | undefined {
   const normalized = model.trim().toLowerCase();
 
@@ -60,36 +69,54 @@ function toMemoryResult(memory: Record<string, unknown>): MemoryResult {
 }
 
 function ensurePersistentStorage(config: Required<Mem0Config>): void {
-  if (config.historyDbPath) {
-    mkdirSync(dirname(config.historyDbPath), { recursive: true });
+  const historyDbPath = normalizeOptionalString(config.historyDbPath);
+  if (historyDbPath) {
+    mkdirSync(dirname(historyDbPath), { recursive: true });
   }
 
-  if (config.vectorStoreProvider === "qdrant") {
-    if (!config.vectorStorePath) {
-      throw new Error(
-        "mem0.vectorStorePath must be set when mem0.vectorStoreProvider is \"qdrant\"."
-      );
+  const vectorStorePath = normalizeOptionalString(config.vectorStorePath);
+  if (config.vectorStoreProvider === "memory") {
+    if (vectorStorePath) {
+      mkdirSync(dirname(vectorStorePath), { recursive: true });
     }
-    mkdirSync(config.vectorStorePath, { recursive: true });
+    return;
+  }
+
+  if (!normalizeOptionalString(config.vectorStoreUrl)) {
+    throw new Error(
+      "mem0.vectorStoreUrl must be set when mem0.vectorStoreProvider is \"qdrant\". " +
+        "Use mem0.vectorStoreProvider = \"memory\" for local SQLite-backed persistence."
+    );
   }
 }
 
 function buildVectorStoreConfig(config: Required<Mem0Config>): Record<string, unknown> {
   if (config.vectorStoreProvider === "memory") {
+    const vectorStorePath = normalizeOptionalString(config.vectorStorePath);
     return {
       provider: "memory",
       config: {
         collectionName: config.collectionName,
+        ...(vectorStorePath ? { dbPath: vectorStorePath } : {}),
       },
     };
+  }
+
+  const vectorStoreUrl = normalizeOptionalString(config.vectorStoreUrl);
+  const vectorStoreApiKey = normalizeOptionalString(config.vectorStoreApiKey);
+  if (!vectorStoreUrl) {
+    throw new Error(
+      "mem0.vectorStoreUrl must be set when mem0.vectorStoreProvider is \"qdrant\". " +
+        "Use mem0.vectorStoreProvider = \"memory\" for local SQLite-backed persistence."
+    );
   }
 
   return {
     provider: "qdrant",
     config: {
       collectionName: config.collectionName,
-      path: config.vectorStorePath,
-      onDisk: true,
+      url: vectorStoreUrl,
+      ...(vectorStoreApiKey ? { apiKey: vectorStoreApiKey } : {}),
     },
   };
 }

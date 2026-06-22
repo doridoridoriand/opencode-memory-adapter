@@ -54,6 +54,8 @@ export interface Mem0Config {
   historyDbPath?: string | null;
   vectorStoreProvider?: "memory" | "qdrant";
   vectorStorePath?: string | null;
+  vectorStoreUrl?: string | null;
+  vectorStoreApiKey?: string | null;
   collectionName?: string;
 }
 
