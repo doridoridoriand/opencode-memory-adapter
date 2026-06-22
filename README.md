@@ -188,7 +188,7 @@ Full guide: [docs/providers/openviking.md](./docs/providers/openviking.md)
 
 MIT
 
-## Development Safety
+## Repository Development Safety
 
 Install the versioned git hooks once per clone:
 

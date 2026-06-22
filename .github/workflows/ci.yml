@@ -15,6 +15,29 @@ permissions:
   contents: read
 
 jobs:
+  safety:
+    name: Safety
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Scan tracked files for sensitive content
+        run: npm run scan:sensitive
+
+      - name: Audit npm package contents
+        run: npm run audit:package
+
   validate:
     name: Validate (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest

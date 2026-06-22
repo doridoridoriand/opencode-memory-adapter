@@ -6,7 +6,7 @@
   "type": "module",
   "main": "dist/index.js",
   "exports": "./dist/index.js",
-  "files": ["dist", "scripts", "docs", "README.md", "LICENSE"],
+  "files": ["dist", "docs", "scripts/init-config.js", "README.md", "LICENSE"],
   "bin": {
     "opencode-memory-adapter": "./scripts/init-config.js"
   },
@@ -19,6 +19,7 @@
     "scan:sensitive": "node scripts/sensitive-scan.js --tracked",
     "scan:sensitive:staged": "node scripts/sensitive-scan.js --staged",
     "audit:public": "node scripts/sensitive-scan.js --public-audit",
+    "audit:package": "node scripts/package-audit.js",
     "test": "npm run test:suite",
     "test:suite": "vitest run --config vitest.config.ts",
     "test:unit": "vitest run --config vitest.unit.config.ts",
