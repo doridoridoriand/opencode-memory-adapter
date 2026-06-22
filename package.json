@@ -20,7 +20,7 @@
     "url": "git+https://github.com/doridoridoriand/opencode-memory-adapter.git"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "type": "module",
   "main": "dist/index.js",
