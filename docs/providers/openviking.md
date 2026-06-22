@@ -85,6 +85,9 @@ If you are working inside this repository, the Kubernetes smoke test also exerci
 npm run test:smoke:k8s
 ```
 
+That smoke test uses the existing Docker Desktop Kubernetes cluster via the
+`docker-desktop` context by default.
+
 ## Common problems
 
 ### `Failed to load OpenViking provider`

@@ -5,10 +5,12 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const CLUSTER_NAME = "opencode-memory-adapter-smoke";
-const KUBECTL_CONTEXT = `kind-${CLUSTER_NAME}`;
+const KUBECTL_CONTEXT = process.env.KUBECTL_CONTEXT || "docker-desktop";
 const NAMESPACE = "opencode-memory-adapter-smoke";
 const POD_NAME = "opencode-memory-adapter-smoke";
+const POD_POLL_INTERVAL_MS = 2_000;
+const POD_PROGRESS_TIMEOUT_MS = Number(process.env.POD_PROGRESS_TIMEOUT_MS || 300_000);
+const POD_TOTAL_TIMEOUT_MS = Number(process.env.POD_TOTAL_TIMEOUT_MS || 900_000);
 
 function run(cmd, args, options = {}) {
   const result = execFileSync(cmd, args, {
@@ -28,6 +30,39 @@ function runInherit(cmd, args, options = {}) {
   });
 }
 
+function applyManifest(yaml, args) {
+  execFileSync(
+    "kubectl",
+    [...args, "apply", "-f", "-"],
+    {
+      input: yaml,
+      encoding: "utf8",
+      stdio: ["pipe", "inherit", "inherit"],
+    }
+  );
+}
+
+function sleep(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+function runKubectlJson(args, options = {}) {
+  const output = run("kubectl", args, options);
+  return output.length > 0 ? JSON.parse(output) : null;
+}
+
+function tryRunKubectlJson(args, options = {}) {
+  try {
+    return runKubectlJson(args, options);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (/NotFound/i.test(message)) {
+      return null;
+    }
+    throw error;
+  }
+}
+
 function ensureDocker() {
   try {
     run("docker", ["info"]);
@@ -36,37 +71,75 @@ function ensureDocker() {
   }
 }
 
-function ensureKindCluster() {
-  const clusters = run("kind", ["get", "clusters"]).split(/\r?\n/).filter(Boolean);
-  if (!clusters.includes(CLUSTER_NAME)) {
-    runInherit("kind", ["create", "cluster", "--name", CLUSTER_NAME, "--wait", "120s"]);
+function shouldRequireDockerDaemon() {
+  return KUBECTL_CONTEXT === "docker-desktop";
+}
+
+function ensureKubernetesContext() {
+  const contexts = run("kubectl", ["config", "get-contexts", "-o", "name"])
+    .split(/\r?\n/)
+    .filter(Boolean);
+
+  if (!contexts.includes(KUBECTL_CONTEXT)) {
+    throw new Error(
+      `Kubernetes context "${KUBECTL_CONTEXT}" was not found. ` +
+        `Set KUBECTL_CONTEXT to a valid context and ensure the matching kubeconfig is loaded.`
+    );
   }
+
+  const deadline = Date.now() + 120_000;
+  while (Date.now() < deadline) {
+    try {
+      run("kubectl", [
+        "--context",
+        KUBECTL_CONTEXT,
+        "--request-timeout=5s",
+        "get",
+        "--raw=/readyz",
+      ]);
+      return;
+    } catch {
+      sleep(2_000);
+    }
+  }
+
+  throw new Error(
+    `Kubernetes context "${KUBECTL_CONTEXT}" is not reachable. ` +
+      (shouldRequireDockerDaemon()
+        ? "Ensure Docker Desktop Kubernetes is running before executing the smoke test."
+        : "Ensure the target cluster is reachable before executing the smoke test.")
+  );
 }
 
 function ensureNamespace() {
-  run(
-    "sh",
-    [
-      "-lc",
-      `kubectl --context ${KUBECTL_CONTEXT} create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl --context ${KUBECTL_CONTEXT} apply -f -`,
-    ],
-    { stdio: "inherit" }
-  );
+  const manifest = run("kubectl", [
+    "--context",
+    KUBECTL_CONTEXT,
+    "create",
+    "namespace",
+    NAMESPACE,
+    "--dry-run=client",
+    "-o",
+    "yaml",
+  ]);
+  applyManifest(manifest, ["--context", KUBECTL_CONTEXT]);
 }
 
 function applyMockConfigMap(repoRoot) {
-  run(
-    "sh",
-    [
-      "-lc",
-      `kubectl --context ${KUBECTL_CONTEXT} -n ${NAMESPACE} create configmap opencode-memory-adapter-mock --from-file=server.js=${join(
-        repoRoot,
-        "scripts",
-        "mock-provider-service.js"
-      )} --dry-run=client -o yaml | kubectl --context ${KUBECTL_CONTEXT} -n ${NAMESPACE} apply -f -`,
-    ],
-    { stdio: "inherit" }
-  );
+  const manifest = run("kubectl", [
+    "--context",
+    KUBECTL_CONTEXT,
+    "-n",
+    NAMESPACE,
+    "create",
+    "configmap",
+    "opencode-memory-adapter-mock",
+    `--from-file=server.js=${join(repoRoot, "scripts", "mock-provider-service.js")}`,
+    "--dry-run=client",
+    "-o",
+    "yaml",
+  ]);
+  applyManifest(manifest, ["--context", KUBECTL_CONTEXT, "-n", NAMESPACE]);
 }
 
 function recreatePod() {
@@ -113,28 +186,141 @@ spec:
       emptyDir: {}
 `;
 
-  execFileSync(
-    "kubectl",
-    ["--context", KUBECTL_CONTEXT, "-n", NAMESPACE, "apply", "-f", "-"],
-    {
-      input: manifest,
-      encoding: "utf8",
-      stdio: ["pipe", "inherit", "inherit"],
-    }
-  );
+  applyManifest(manifest, ["--context", KUBECTL_CONTEXT, "-n", NAMESPACE]);
 }
 
 function waitForPod() {
-  runInherit("kubectl", [
-    "--context",
-    KUBECTL_CONTEXT,
-    "-n",
-    NAMESPACE,
-    "wait",
-    "--for=condition=Ready",
-    `pod/${POD_NAME}`,
-    "--timeout=180s",
-  ]);
+  const startedAt = Date.now();
+  let lastProgressAt = startedAt;
+  let lastStateKey = "";
+  let lastEventKey = "";
+
+  while (Date.now() - startedAt <= POD_TOTAL_TIMEOUT_MS) {
+    const pod = tryRunKubectlJson(
+      [
+        "--context",
+        KUBECTL_CONTEXT,
+        "-n",
+        NAMESPACE,
+        "get",
+        "pod",
+        POD_NAME,
+        "-o",
+        "json",
+      ],
+      { stdio: ["ignore", "pipe", "ignore"] }
+    );
+
+    const stateKey = JSON.stringify({
+      phase: pod?.status?.phase ?? "Unknown",
+      ready: pod?.status?.conditions?.find((condition) => condition.type === "Ready")?.status ?? "Unknown",
+      waiting: (pod?.status?.containerStatuses ?? []).map((status) => ({
+        name: status.name,
+        waiting: status.state?.waiting?.reason ?? null,
+        running: Boolean(status.state?.running),
+        terminated: status.state?.terminated?.reason ?? null,
+      })),
+    });
+    if (stateKey !== lastStateKey) {
+      const readyContainers = (pod?.status?.containerStatuses ?? []).filter(
+        (status) => status.ready
+      ).length;
+      const totalContainers = pod?.spec?.containers?.length ?? 0;
+      const phase = pod?.status?.phase ?? "Unknown";
+      console.log(
+        `[k8s-smoke] pod state: ${phase} (${readyContainers}/${totalContainers} containers ready)`
+      );
+      lastStateKey = stateKey;
+      lastProgressAt = Date.now();
+    }
+
+    const readyCondition = pod?.status?.conditions?.find((condition) => condition.type === "Ready");
+    if (readyCondition?.status === "True") {
+      console.log("[k8s-smoke] pod condition met");
+      return;
+    }
+
+    const fatalReason = (pod?.status?.containerStatuses ?? [])
+      .map((status) => status.state?.waiting?.reason ?? status.state?.terminated?.reason ?? null)
+      .find((reason) =>
+        [
+          "CreateContainerConfigError",
+          "CreateContainerError",
+          "CrashLoopBackOff",
+          "ErrImagePull",
+          "ImageInspectError",
+          "InvalidImageName",
+          "RunContainerError",
+        ].includes(reason ?? "")
+      );
+    if (fatalReason) {
+      throw new Error(`Pod entered a fatal state before becoming ready: ${fatalReason}`);
+    }
+
+    const events = runKubectlJson(
+      [
+        "--context",
+        KUBECTL_CONTEXT,
+        "-n",
+        NAMESPACE,
+        "get",
+        "events",
+        "--field-selector",
+        `involvedObject.kind=Pod,involvedObject.name=${POD_NAME}`,
+        "-o",
+        "json",
+      ],
+      { stdio: ["ignore", "pipe", "ignore"] }
+    );
+    const latestEvent = (events?.items ?? [])
+      .slice()
+      .sort((left, right) =>
+        String(
+          right.lastTimestamp ??
+            right.eventTime ??
+            right.metadata?.creationTimestamp ??
+            ""
+        ).localeCompare(
+          String(
+            left.lastTimestamp ??
+              left.eventTime ??
+              left.metadata?.creationTimestamp ??
+              ""
+          )
+        )
+      )[0];
+
+    if (latestEvent) {
+      const eventKey = JSON.stringify({
+        reason: latestEvent.reason,
+        message: latestEvent.message,
+        timestamp:
+          latestEvent.lastTimestamp ??
+          latestEvent.eventTime ??
+          latestEvent.metadata?.creationTimestamp ??
+          "",
+      });
+      if (eventKey !== lastEventKey) {
+        console.log(
+          `[k8s-smoke] pod event: ${latestEvent.reason ?? "Unknown"} - ${latestEvent.message ?? ""}`
+        );
+        lastEventKey = eventKey;
+        lastProgressAt = Date.now();
+      }
+    }
+
+    if (Date.now() - lastProgressAt > POD_PROGRESS_TIMEOUT_MS) {
+      throw new Error(
+        `Pod did not make progress for ${Math.round(POD_PROGRESS_TIMEOUT_MS / 1000)}s while waiting for readiness.`
+      );
+    }
+
+    sleep(POD_POLL_INTERVAL_MS);
+  }
+
+  throw new Error(
+    `Pod did not become ready within ${Math.round(POD_TOTAL_TIMEOUT_MS / 1000)}s.`
+  );
 }
 
 function copyIntoPod(localPath, remotePath) {
@@ -175,8 +361,10 @@ function main() {
   const tempRoot = mkdtempSync(join(tmpdir(), "opencode-memory-adapter-k8s-host-"));
 
   try {
-    ensureDocker();
-    ensureKindCluster();
+    if (shouldRequireDockerDaemon()) {
+      ensureDocker();
+    }
+    ensureKubernetesContext();
     ensureNamespace();
     applyMockConfigMap(repoRoot);
     recreatePod();

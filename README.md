@@ -215,5 +215,8 @@ npm run test:smoke:mem0
 npm run test:smoke:k8s
 ```
 
+`npm run test:smoke:k8s` uses the existing Docker Desktop Kubernetes cluster via the
+`docker-desktop` context. If you need a different context name, set `KUBECTL_CONTEXT`.
+
 GitHub Actions runs the same `build`, `test:unit`, `test:e2e`, and `test:coverage`
 commands on pull requests and pushes to `main` / `feat/**`.
