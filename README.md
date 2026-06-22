@@ -40,12 +40,12 @@ Restart opencode after installing.
 ## Publishing
 
 This repository includes `.github/workflows/publish.yml` for npm publication, but the workflow is
-currently disabled while releases are being published from a local machine.
+currently disabled. At the moment, publishing is performed only from the author's local machine.
 
 Recommended setup:
 
 1. Bump `package.json` to the release version on `main`.
-2. Run `npm publish` from a machine that is already authenticated to npm.
+2. Run `npm publish` from the author's local machine after authenticating to npm.
 3. Revoke any temporary automation token immediately after publishing.
 
 Before publishing locally, run `scan:sensitive`, `audit:package`, `build`, `test:unit`, and
