@@ -1,11 +1,11 @@
-# opencode-memory-plugin
+# opencode-memory-adapter
 
 OpenCode plugin that provides persistent memory functionality via multiple provider backends.
 
 ## Installation
 
 ```bash
-npm install -g opencode-memory-plugin
+npm install -g opencode-memory-adapter
 ```
 
 Install the peer dependencies for the provider you plan to use:
@@ -24,14 +24,14 @@ npm install @yfedberts/huscarl
 Then generate the starter config:
 
 ```bash
-npx opencode-memory-plugin init
+npx opencode-memory-adapter init
 ```
 
 Then add to your `opencode.json`:
 
 ```json
 {
-  "plugin": ["opencode-memory-plugin"]
+  "plugin": ["opencode-memory-adapter"]
 }
 ```
 
@@ -39,8 +39,8 @@ Restart opencode after installing.
 
 ## Configuration
 
-Create `~/.config/opencode-memory/config.json` with `npx opencode-memory-plugin init`, or add
-`.opencode-memory.json` in your project:
+Create `~/.config/opencode-memory-adapter/config.json` with `npx opencode-memory-adapter init`, or add
+`.opencode-memory-adapter.json` in your project:
 
 ```json
 {
@@ -50,10 +50,10 @@ Create `~/.config/opencode-memory/config.json` with `npx opencode-memory-plugin 
     "ollamaBaseUrl": "http://localhost:11434",
     "llmModel": "qwen2.5:7b",
     "embedModel": "nomic-embed-text",
-    "historyDbPath": "~/.local/share/opencode-memory/mem0/history.db",
+    "historyDbPath": "~/.local/share/opencode-memory-adapter/mem0/history.db",
     "vectorStoreProvider": "memory",
-    "vectorStorePath": "~/.local/share/opencode-memory/mem0/vector_store.db",
-    "collectionName": "opencode-memory"
+    "vectorStorePath": "~/.local/share/opencode-memory-adapter/mem0/vector_store.db",
+    "collectionName": "opencode-memory-adapter"
   }
 }
 ```
@@ -159,7 +159,7 @@ Example:
   "mem0": {
     "vectorStoreProvider": "qdrant",
     "vectorStoreUrl": "http://127.0.0.1:6333",
-    "collectionName": "opencode-memory"
+    "collectionName": "opencode-memory-adapter"
   }
 }
 ```

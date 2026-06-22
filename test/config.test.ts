@@ -38,12 +38,12 @@ afterEach(async () => {
 
 describe("loadConfig", () => {
   it("returns the default config when no config files exist", async () => {
-    const homeDir = await makeTempDir("opencode-memory-home-");
-    const worktree = await makeTempDir("opencode-memory-worktree-");
+    const homeDir = await makeTempDir("opencode-memory-adapter-home-");
+    const worktree = await makeTempDir("opencode-memory-adapter-worktree-");
     const { getGlobalConfigPath, loadConfig } = await importConfigModule(homeDir);
 
     expect(getGlobalConfigPath()).toBe(
-      join(homeDir, ".config", "opencode-memory", "config.json")
+      join(homeDir, ".config", "opencode-memory-adapter", "config.json")
     );
     expect(loadConfig(worktree)).toEqual({
       provider: "mem0",
@@ -52,30 +52,44 @@ describe("loadConfig", () => {
         ollamaBaseUrl: "http://localhost:11434",
         llmModel: "qwen2.5:7b",
         embedModel: "nomic-embed-text",
-        historyDbPath: join(homeDir, ".local", "share", "opencode-memory", "mem0", "history.db"),
+        historyDbPath: join(
+          homeDir,
+          ".local",
+          "share",
+          "opencode-memory-adapter",
+          "mem0",
+          "history.db"
+        ),
         vectorStoreProvider: "memory",
-        vectorStorePath: join(homeDir, ".local", "share", "opencode-memory", "mem0", "vector_store.db"),
+        vectorStorePath: join(
+          homeDir,
+          ".local",
+          "share",
+          "opencode-memory-adapter",
+          "mem0",
+          "vector_store.db"
+        ),
         vectorStoreUrl: null,
         vectorStoreApiKey: null,
-        collectionName: "opencode-memory",
+        collectionName: "opencode-memory-adapter",
       },
     });
   });
 
   it("merges mem0 config from global and project files and interpolates env vars", async () => {
-    const homeDir = await makeTempDir("opencode-memory-home-");
-    const worktree = await makeTempDir("opencode-memory-worktree-");
+    const homeDir = await makeTempDir("opencode-memory-adapter-home-");
+    const worktree = await makeTempDir("opencode-memory-adapter-worktree-");
     vi.stubEnv("MEMORY_LLM_MODEL", "llama3.2:latest");
     vi.stubEnv("MEMORY_HISTORY_DB", "/tmp/history.sqlite");
 
-    await writeJson(join(homeDir, ".config", "opencode-memory", "config.json"), {
+    await writeJson(join(homeDir, ".config", "opencode-memory-adapter", "config.json"), {
       provider: "mem0",
       scope: "project",
       mem0: {
         llmModel: "${MEMORY_LLM_MODEL}",
       },
     });
-    await writeJson(join(worktree, ".opencode-memory.json"), {
+    await writeJson(join(worktree, ".opencode-memory-adapter.json"), {
       mem0: {
         embedModel: "text-embed-local",
         historyDbPath: "${MEMORY_HISTORY_DB}",
@@ -92,18 +106,25 @@ describe("loadConfig", () => {
         embedModel: "text-embed-local",
         historyDbPath: "/tmp/history.sqlite",
         vectorStoreProvider: "memory",
-        vectorStorePath: join(homeDir, ".local", "share", "opencode-memory", "mem0", "vector_store.db"),
+        vectorStorePath: join(
+          homeDir,
+          ".local",
+          "share",
+          "opencode-memory-adapter",
+          "mem0",
+          "vector_store.db"
+        ),
         vectorStoreUrl: null,
         vectorStoreApiKey: null,
-        collectionName: "opencode-memory",
+        collectionName: "opencode-memory-adapter",
       },
     });
   });
 
   it("falls back to the default provider when an invalid provider is configured", async () => {
-    const homeDir = await makeTempDir("opencode-memory-home-");
-    const worktree = await makeTempDir("opencode-memory-worktree-");
-    await writeJson(join(worktree, ".opencode-memory.json"), {
+    const homeDir = await makeTempDir("opencode-memory-adapter-home-");
+    const worktree = await makeTempDir("opencode-memory-adapter-worktree-");
+    await writeJson(join(worktree, ".opencode-memory-adapter.json"), {
       provider: "not-a-provider",
       scope: "project",
     });
@@ -117,18 +138,18 @@ describe("loadConfig", () => {
   });
 
   it("merges honcho config when honcho is selected", async () => {
-    const homeDir = await makeTempDir("opencode-memory-home-");
-    const worktree = await makeTempDir("opencode-memory-worktree-");
+    const homeDir = await makeTempDir("opencode-memory-adapter-home-");
+    const worktree = await makeTempDir("opencode-memory-adapter-worktree-");
     vi.stubEnv("HONCHO_TEST_KEY", "honcho-secret");
 
-    await writeJson(join(homeDir, ".config", "opencode-memory", "config.json"), {
+    await writeJson(join(homeDir, ".config", "opencode-memory-adapter", "config.json"), {
       provider: "honcho",
       honcho: {
         apiKey: "${HONCHO_TEST_KEY}",
         baseUrl: "https://honcho.example.com",
       },
     });
-    await writeJson(join(worktree, ".opencode-memory.json"), {
+    await writeJson(join(worktree, ".opencode-memory-adapter.json"), {
       honcho: {
         workspaceId: "workspace-local",
       },
@@ -146,17 +167,17 @@ describe("loadConfig", () => {
   });
 
   it("merges openviking config when openviking is selected", async () => {
-    const homeDir = await makeTempDir("opencode-memory-home-");
-    const worktree = await makeTempDir("opencode-memory-worktree-");
+    const homeDir = await makeTempDir("opencode-memory-adapter-home-");
+    const worktree = await makeTempDir("opencode-memory-adapter-worktree-");
     vi.stubEnv("OPENVIKING_API_KEY", "ov-secret");
 
-    await writeJson(join(homeDir, ".config", "opencode-memory", "config.json"), {
+    await writeJson(join(homeDir, ".config", "opencode-memory-adapter", "config.json"), {
       provider: "openviking",
       openviking: {
         url: "http://openviking.local:1933",
       },
     });
-    await writeJson(join(worktree, ".opencode-memory.json"), {
+    await writeJson(join(worktree, ".opencode-memory-adapter.json"), {
       openviking: {
         apiKey: "${OPENVIKING_API_KEY}",
       },

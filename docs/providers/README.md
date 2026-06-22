@@ -12,17 +12,17 @@ Use this directory when you want provider-specific setup instructions instead of
 
 ## Common workflow
 
-1. Install `opencode-memory-plugin` and the peer dependencies for exactly one provider.
-2. Run `npx opencode-memory-plugin init`.
-3. Update `~/.config/opencode-memory/config.json` or create a project-local `.opencode-memory.json`.
+1. Install `opencode-memory-adapter` and the peer dependencies for exactly one provider.
+2. Run `npx opencode-memory-adapter init`.
+3. Update `~/.config/opencode-memory-adapter/config.json` or create a project-local `.opencode-memory-adapter.json`.
 4. Set `"provider"` to `mem0`, `honcho`, or `openviking`.
 5. Restart OpenCode.
 6. Store one memory and immediately recall it to verify the setup.
 
 ## Global config vs project config
 
-- Use the global config at `~/.config/opencode-memory/config.json` if you want the same provider and credentials across many repositories.
-- Use `.opencode-memory.json` in a single repository if that project should have its own provider, workspace, URL, or storage paths.
+- Use the global config at `~/.config/opencode-memory-adapter/config.json` if you want the same provider and credentials across many repositories.
+- Use `.opencode-memory-adapter.json` in a single repository if that project should have its own provider, workspace, URL, or storage paths.
 - Project config overrides global config.
 
 ## Recommended first choice

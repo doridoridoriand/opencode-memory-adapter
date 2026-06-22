@@ -4,8 +4,8 @@ import { homedir } from "node:os";
 import { getDefaultMem0Config } from "./providers/mem0-defaults.js";
 import type { MemoryPluginConfig, MemoryProviderName } from "./types.js";
 
-const GLOBAL_CONFIG_PATH = join(homedir(), ".config", "opencode-memory", "config.json");
-const PROJECT_CONFIG_FILENAME = ".opencode-memory.json";
+const GLOBAL_CONFIG_PATH = join(homedir(), ".config", "opencode-memory-adapter", "config.json");
+const PROJECT_CONFIG_FILENAME = ".opencode-memory-adapter.json";
 
 const DEFAULT_CONFIG: MemoryPluginConfig = {
   provider: "mem0",

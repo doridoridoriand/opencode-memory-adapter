@@ -11,9 +11,9 @@ Use `openviking` when you want a self-hosted memory server with filesystem-style
 ## 1. Install dependencies
 
 ```bash
-npm install -g opencode-memory-plugin
+npm install -g opencode-memory-adapter
 npm install @yfedberts/huscarl
-npx opencode-memory-plugin init
+npx opencode-memory-adapter init
 ```
 
 ## 2. Start or provision an OpenViking server
@@ -75,7 +75,7 @@ After restarting OpenCode:
 
 Implementation detail that helps when debugging:
 
-- Each memory is written as a markdown resource under `opencode-memory/<scope>/<category>/<uuid>.md`.
+- Each memory is written as a markdown resource under `opencode-memory-adapter/<scope>/<category>/<uuid>.md`.
 - The file begins with a JSON metadata comment, followed by the memory text.
 - The plugin uploads with `wait: true`, so a successful `memory-store` should be searchable immediately.
 
@@ -102,7 +102,7 @@ Check:
 
 - `scope` matches between store and recall
 - the OpenViking server finished indexing the uploaded file
-- the server is actually searching the `opencode-memory/...` resource tree
+- the server is actually searching the `opencode-memory-adapter/...` resource tree
 
 In this plugin, add uses `wait: true`, so indexing delay should usually not be the cause. If recall still fails, inspect the uploaded resources on the server side.
 
@@ -111,8 +111,8 @@ In this plugin, add uses `wait: true`, so indexing delay should usually not be t
 Look for markdown resources under:
 
 ```text
-opencode-memory/global/<category>/
-opencode-memory/project/<category>/
+opencode-memory-adapter/global/<category>/
+opencode-memory-adapter/project/<category>/
 ```
 
 That layout mirrors the plugin's `scope` and `category` fields.

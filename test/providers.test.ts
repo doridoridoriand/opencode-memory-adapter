@@ -108,8 +108,8 @@ describe("runtime config", () => {
       vectorStore: {
         provider: "memory",
         config: {
-          collectionName: "opencode-memory",
-          dbPath: expect.stringContaining("/opencode-memory/mem0/vector_store.db"),
+          collectionName: "opencode-memory-adapter",
+          dbPath: expect.stringContaining("/opencode-memory-adapter/mem0/vector_store.db"),
         },
       },
       llm: {
@@ -120,7 +120,7 @@ describe("runtime config", () => {
           openaiBaseUrl: "http://localhost:11434/v1",
         },
       },
-      historyDbPath: expect.stringContaining("/opencode-memory/mem0/history.db"),
+      historyDbPath: expect.stringContaining("/opencode-memory-adapter/mem0/history.db"),
     });
   });
 
@@ -145,7 +145,7 @@ describe("runtime config", () => {
       vectorStore: {
         provider: "qdrant",
         config: {
-          collectionName: "opencode-memory",
+          collectionName: "opencode-memory-adapter",
           url: "http://127.0.0.1:6333",
           apiKey: "secret",
         },
@@ -158,7 +158,7 @@ describe("runtime config", () => {
           openaiBaseUrl: "http://localhost:11434/v1",
         },
       },
-      historyDbPath: expect.stringContaining("/opencode-memory/mem0/history.db"),
+      historyDbPath: expect.stringContaining("/opencode-memory-adapter/mem0/history.db"),
     });
   });
 

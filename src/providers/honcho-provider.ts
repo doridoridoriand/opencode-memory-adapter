@@ -3,7 +3,7 @@ import { BaseMemoryProvider } from "./base.js";
 import { normalizeMemoryMetadata } from "./metadata.js";
 import type { HonchoConfig, ListOptions, MemoryMetadata, MemoryResult, SearchOptions } from "../types.js";
 
-const HONCHO_PEER_ID = "opencode-memory-plugin";
+const HONCHO_PEER_ID = "opencode-memory-adapter";
 const HONCHO_LIST_CONCURRENCY = 5;
 
 function buildMetadata(metadata: MemoryMetadata): MemoryMetadata {
@@ -88,7 +88,7 @@ export class HonchoProvider extends BaseMemoryProvider {
 
     const sdk = await this.getSdk();
     this.peer = await sdk.peer(HONCHO_PEER_ID, {
-      metadata: { source: "opencode-memory-plugin" },
+      metadata: { source: "opencode-memory-adapter" },
     });
     return this.peer;
   }

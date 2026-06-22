@@ -161,7 +161,7 @@ function createToolContext(worktree) {
 
 async function main() {
   const repoRoot = process.cwd();
-  const tempRoot = mkdtempSync(join(tmpdir(), "opencode-memory-smoke-"));
+  const tempRoot = mkdtempSync(join(tmpdir(), "opencode-memory-adapter-smoke-"));
   const packDir = join(tempRoot, "pack");
   const consumerDir = join(tempRoot, "consumer");
   const worktree = join(consumerDir, "workspace");
@@ -186,7 +186,7 @@ async function main() {
       join(consumerDir, "package.json"),
       JSON.stringify(
         {
-          name: "opencode-memory-plugin-smoke",
+          name: "opencode-memory-adapter-smoke",
           private: true,
           type: "module",
         },
@@ -210,7 +210,7 @@ async function main() {
 
     console.log("[smoke] Writing mem0 config");
     writeFileSync(
-      join(worktree, ".opencode-memory.json"),
+      join(worktree, ".opencode-memory-adapter.json"),
       JSON.stringify(
         {
           provider: "mem0",
@@ -232,7 +232,9 @@ async function main() {
 
     console.log("[smoke] Loading packaged plugin");
     const pluginModule = await import(
-      pathToFileURL(join(consumerDir, "node_modules", "opencode-memory-plugin", "dist", "index.js"))
+      pathToFileURL(
+        join(consumerDir, "node_modules", "opencode-memory-adapter", "dist", "index.js")
+      )
         .href
     );
     hooks = await pluginModule.default({

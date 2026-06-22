@@ -6,9 +6,9 @@ import { BaseMemoryProvider } from "./base.js";
 import { normalizeMemoryMetadata } from "./metadata.js";
 import type { ListOptions, MemoryMetadata, MemoryResult, OpenVikingConfig, SearchOptions } from "../types.js";
 
-const RESOURCE_ROOT = "opencode-memory";
+const RESOURCE_ROOT = "opencode-memory-adapter";
 const RESOURCE_URI_PREFIX = "viking://resources/";
-const METADATA_PREFIX = "<!-- opencode-memory:";
+const METADATA_PREFIX = "<!-- opencode-memory-adapter:";
 const METADATA_SUFFIX = " -->";
 
 function toScopePath(scope?: string): string {
@@ -113,7 +113,7 @@ export class OpenVikingProvider extends BaseMemoryProvider {
       const client = new Huscarl({
         url: this.config.url ?? "http://localhost:1933",
         apiKey: this.config.apiKey,
-        agentId: "opencode-memory-plugin",
+        agentId: "opencode-memory-adapter",
       });
       await client.initialize();
       this.sdk = client;
@@ -190,7 +190,7 @@ export class OpenVikingProvider extends BaseMemoryProvider {
       normalizedMetadata.scope,
       normalizedMetadata.category
     );
-    const tempDir = await mkdtemp(join(tmpdir(), "opencode-memory-"));
+    const tempDir = await mkdtemp(join(tmpdir(), "opencode-memory-adapter-"));
     const filePath = join(tempDir, `${id}.md`);
 
     await writeFile(filePath, serializeMemoryContent(content, normalizedMetadata), "utf8");

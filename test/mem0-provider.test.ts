@@ -132,7 +132,7 @@ describe("Mem0Provider", () => {
     expect(sdk.add).toHaveBeenCalledWith(
       [{ role: "user", content: "Remember this" }],
       {
-        agentId: "opencode-memory-plugin",
+        agentId: "opencode-memory-adapter",
         metadata: {
           source: "unit-test",
           category: "decision",
@@ -204,7 +204,7 @@ describe("Mem0Provider", () => {
     expect(sdk.search).toHaveBeenCalledWith("project", {
       topK: 2,
       filters: {
-        agent_id: "opencode-memory-plugin",
+        agent_id: "opencode-memory-adapter",
         scope: "project",
         category: "project",
       },
@@ -250,7 +250,7 @@ describe("Mem0Provider", () => {
     expect(sdk.getAll).toHaveBeenCalledWith({
       topK: 50,
       filters: {
-        agent_id: "opencode-memory-plugin",
+        agent_id: "opencode-memory-adapter",
       },
     });
     expect(results).toEqual([
@@ -296,7 +296,7 @@ describe("Mem0Provider", () => {
     expect(sdk.search).toHaveBeenCalledWith("recent conversation summary", {
       topK: 10,
       filters: {
-        agent_id: "opencode-memory-plugin",
+        agent_id: "opencode-memory-adapter",
         category: "conversation",
       },
     });

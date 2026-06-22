@@ -1,5 +1,5 @@
 {
-  "name": "opencode-memory-plugin",
+  "name": "opencode-memory-adapter",
   "description": "OpenCode plugin that provides persistent memory functionality via multiple provider backends",
   "version": "0.1.0",
   "license": "MIT",
@@ -8,7 +8,7 @@
   "exports": "./dist/index.js",
   "files": ["dist", "scripts", "docs", "README.md", "LICENSE"],
   "bin": {
-    "opencode-memory-plugin": "./scripts/init-config.js"
+    "opencode-memory-adapter": "./scripts/init-config.js"
   },
   "scripts": {
     "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc",

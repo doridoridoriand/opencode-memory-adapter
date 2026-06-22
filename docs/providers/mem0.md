@@ -16,9 +16,9 @@ Important:
 ## 1. Install dependencies
 
 ```bash
-npm install -g opencode-memory-plugin
+npm install -g opencode-memory-adapter
 npm install mem0ai better-sqlite3
-npx opencode-memory-plugin init
+npx opencode-memory-adapter init
 ```
 
 ## 2. Install and start Ollama
@@ -61,10 +61,10 @@ Minimal local config:
     "ollamaBaseUrl": "http://localhost:11434",
     "llmModel": "qwen2.5:7b",
     "embedModel": "nomic-embed-text",
-    "historyDbPath": "~/.local/share/opencode-memory/mem0/history.db",
+    "historyDbPath": "~/.local/share/opencode-memory-adapter/mem0/history.db",
     "vectorStoreProvider": "memory",
-    "vectorStorePath": "~/.local/share/opencode-memory/mem0/vector_store.db",
-    "collectionName": "opencode-memory"
+    "vectorStorePath": "~/.local/share/opencode-memory-adapter/mem0/vector_store.db",
+    "collectionName": "opencode-memory-adapter"
   }
 }
 ```
@@ -111,10 +111,10 @@ If you already run a Qdrant server, configure `mem0` like this:
     "ollamaBaseUrl": "http://localhost:11434",
     "llmModel": "qwen2.5:7b",
     "embedModel": "nomic-embed-text",
-    "historyDbPath": "~/.local/share/opencode-memory/mem0/history.db",
+    "historyDbPath": "~/.local/share/opencode-memory-adapter/mem0/history.db",
     "vectorStoreProvider": "qdrant",
     "vectorStoreUrl": "http://127.0.0.1:6333",
-    "collectionName": "opencode-memory"
+    "collectionName": "opencode-memory-adapter"
   }
 }
 ```

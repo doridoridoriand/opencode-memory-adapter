@@ -1,4 +1,4 @@
-# opencode-memory-plugin - Design Document
+# opencode-memory-adapter - Design Document
 
 ## Overview
 
@@ -87,8 +87,8 @@ interface MemoryResult {
 
 ## Configuration
 
-Global: `~/.config/opencode-memory/config.json`
-Project: `.opencode-memory.json` (takes precedence)
+Global: `~/.config/opencode-memory-adapter/config.json`
+Project: `.opencode-memory-adapter.json` (takes precedence)
 
 ```json
 {
@@ -98,15 +98,15 @@ Project: `.opencode-memory.json` (takes precedence)
     "ollamaBaseUrl": "http://localhost:11434",
     "llmModel": "qwen2.5:7b",
     "embedModel": "nomic-embed-text",
-    "historyDbPath": "~/.local/share/opencode-memory/mem0/history.db",
-    "vectorStoreProvider": "qdrant",
-    "vectorStorePath": "~/.local/share/opencode-memory/mem0/qdrant",
-    "collectionName": "opencode-memory"
+    "historyDbPath": "~/.local/share/opencode-memory-adapter/mem0/history.db",
+    "vectorStoreProvider": "memory",
+    "vectorStorePath": "~/.local/share/opencode-memory-adapter/mem0/vector_store.db",
+    "collectionName": "opencode-memory-adapter"
   },
   "honcho": {
     "apiKey": "${HONCHO_API_KEY}",
     "baseUrl": "http://localhost:8000",
-    "workspaceId": "opencode"
+    "workspaceId": "opencode-memory-adapter"
   },
   "openviking": {
     "url": "http://localhost:1933",
@@ -148,7 +148,7 @@ Dynamic import for lazy loading. Missing providers throw helpful error messages.
 ## Package Structure
 
 ```
-opencode-memory-plugin/
+opencode-memory-adapter/
 ├── LICENSE
 ├── README.md
 ├── package.json
@@ -190,10 +190,10 @@ opencode-memory-plugin/
 ## Install Flow
 
 ```bash
-npm install -g opencode-memory-plugin
+npm install -g opencode-memory-adapter
 npm install mem0ai @qdrant/js-client-rest better-sqlite3
-npx opencode-memory-plugin init
-# Creates ~/.config/opencode-memory/config.json on demand
+npx opencode-memory-adapter init
+# Creates ~/.config/opencode-memory-adapter/config.json on demand
 ```
 
 ## License

@@ -2,7 +2,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Mem0Config } from "../types.js";
 
-const DEFAULT_MEM0_DATA_DIR = join(homedir(), ".local", "share", "opencode-memory", "mem0");
+const DEFAULT_MEM0_DATA_DIR = join(homedir(), ".local", "share", "opencode-memory-adapter", "mem0");
 
 export function getDefaultMem0DataDir(): string {
   return DEFAULT_MEM0_DATA_DIR;
@@ -18,6 +18,6 @@ export function getDefaultMem0Config(): Required<Mem0Config> {
     vectorStorePath: join(DEFAULT_MEM0_DATA_DIR, "vector_store.db"),
     vectorStoreUrl: null,
     vectorStoreApiKey: null,
-    collectionName: "opencode-memory",
+    collectionName: "opencode-memory-adapter",
   };
 }

@@ -5,10 +5,10 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const CLUSTER_NAME = "opencode-memory-smoke";
+const CLUSTER_NAME = "opencode-memory-adapter-smoke";
 const KUBECTL_CONTEXT = `kind-${CLUSTER_NAME}`;
-const NAMESPACE = "opencode-memory-smoke";
-const POD_NAME = "opencode-memory-smoke";
+const NAMESPACE = "opencode-memory-adapter-smoke";
+const POD_NAME = "opencode-memory-adapter-smoke";
 
 function run(cmd, args, options = {}) {
   const result = execFileSync(cmd, args, {
@@ -59,7 +59,7 @@ function applyMockConfigMap(repoRoot) {
     "sh",
     [
       "-lc",
-      `kubectl --context ${KUBECTL_CONTEXT} -n ${NAMESPACE} create configmap opencode-memory-mock --from-file=server.js=${join(
+      `kubectl --context ${KUBECTL_CONTEXT} -n ${NAMESPACE} create configmap opencode-memory-adapter-mock --from-file=server.js=${join(
         repoRoot,
         "scripts",
         "mock-provider-service.js"
@@ -108,7 +108,7 @@ spec:
   volumes:
     - name: mock
       configMap:
-        name: opencode-memory-mock
+        name: opencode-memory-adapter-mock
     - name: tmp
       emptyDir: {}
 `;
@@ -172,7 +172,7 @@ function packPlugin(repoRoot, packDir) {
 
 function main() {
   const repoRoot = process.cwd();
-  const tempRoot = mkdtempSync(join(tmpdir(), "opencode-memory-k8s-host-"));
+  const tempRoot = mkdtempSync(join(tmpdir(), "opencode-memory-adapter-k8s-host-"));
 
   try {
     ensureDocker();

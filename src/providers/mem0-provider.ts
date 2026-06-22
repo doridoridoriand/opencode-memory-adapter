@@ -6,7 +6,7 @@ import { getDefaultMem0Config } from "./mem0-defaults.js";
 import { normalizeMemoryMetadata } from "./metadata.js";
 import type { ListOptions, Mem0Config, MemoryMetadata, MemoryResult, SearchOptions } from "../types.js";
 
-const MEM0_AGENT_ID = "opencode-memory-plugin";
+const MEM0_AGENT_ID = "opencode-memory-adapter";
 
 function withOpenAIV1Path(baseUrl: string): string {
   const trimmed = baseUrl.replace(/\/+$/, "");

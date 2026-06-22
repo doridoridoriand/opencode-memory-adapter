@@ -21,8 +21,8 @@ describe("HonchoProvider", () => {
       source: "unit-test",
     });
 
-    expect(sdk.peer).toHaveBeenCalledWith("opencode-memory-plugin", {
-      metadata: { source: "opencode-memory-plugin" },
+    expect(sdk.peer).toHaveBeenCalledWith("opencode-memory-adapter", {
+      metadata: { source: "opencode-memory-adapter" },
     });
     expect(sdk.session).toHaveBeenCalledWith(expect.stringMatching(/^memory-/), {
       metadata: {

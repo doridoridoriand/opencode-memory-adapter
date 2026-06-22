@@ -66,7 +66,9 @@ async function resetDebugState(baseUrl, segment) {
 
 async function loadPlugin(consumerDir) {
   return import(
-    pathToFileURL(join(consumerDir, "node_modules", "opencode-memory-plugin", "dist", "index.js"))
+    pathToFileURL(
+      join(consumerDir, "node_modules", "opencode-memory-adapter", "dist", "index.js")
+    )
       .href
   );
 }
@@ -77,7 +79,7 @@ async function runMem0Test(pluginModule, worktree, baseUrl) {
   mkdirSync(storageDir, { recursive: true });
 
   writeFileSync(
-    join(worktree, ".opencode-memory.json"),
+    join(worktree, ".opencode-memory-adapter.json"),
     JSON.stringify(
       {
         provider: "mem0",
@@ -159,7 +161,7 @@ async function runMem0Test(pluginModule, worktree, baseUrl) {
 async function runHonchoTest(pluginModule, worktree, baseUrl) {
   console.log("[k8s-smoke] Testing honcho provider");
   writeFileSync(
-    join(worktree, ".opencode-memory.json"),
+    join(worktree, ".opencode-memory-adapter.json"),
     JSON.stringify(
       {
         provider: "honcho",
@@ -236,7 +238,7 @@ async function runHonchoTest(pluginModule, worktree, baseUrl) {
 async function runOpenVikingTest(pluginModule, worktree, baseUrl) {
   console.log("[k8s-smoke] Testing openviking provider");
   writeFileSync(
-    join(worktree, ".opencode-memory.json"),
+    join(worktree, ".opencode-memory-adapter.json"),
     JSON.stringify(
       {
         provider: "openviking",
@@ -306,7 +308,7 @@ async function main() {
     throw new Error("Usage: node scripts/smoke-k8s-providers-runner.js <plugin-tarball>");
   }
 
-  const tempRoot = mkdtempSync(join(tmpdir(), "opencode-memory-k8s-smoke-"));
+  const tempRoot = mkdtempSync(join(tmpdir(), "opencode-memory-adapter-k8s-smoke-"));
   const consumerDir = join(tempRoot, "consumer");
   const worktreeRoot = join(tempRoot, "workspace");
   const baseUrl = "http://127.0.0.1:8080";
@@ -319,7 +321,7 @@ async function main() {
       join(consumerDir, "package.json"),
       JSON.stringify(
         {
-          name: "opencode-memory-plugin-k8s-smoke",
+          name: "opencode-memory-adapter-k8s-smoke",
           private: true,
           type: "module",
         },

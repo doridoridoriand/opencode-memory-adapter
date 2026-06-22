@@ -12,9 +12,9 @@ Use `honcho` when you want a managed memory backend or you already run a Honcho 
 ## 1. Install dependencies
 
 ```bash
-npm install -g opencode-memory-plugin
+npm install -g opencode-memory-adapter
 npm install @honcho-ai/sdk
-npx opencode-memory-plugin init
+npx opencode-memory-adapter init
 ```
 
 ## 2. Get a Honcho API key
