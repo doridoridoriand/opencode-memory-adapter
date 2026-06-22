@@ -17,6 +17,8 @@ permissions:
 jobs:
   publish:
     name: Publish package
+    # Temporarily disabled while releases are published from a local machine.
+    if: ${{ false }}
     runs-on: ubuntu-latest
 
     steps:

@@ -39,20 +39,17 @@ Restart opencode after installing.
 
 ## Publishing
 
-This repository includes `.github/workflows/publish.yml` for npm publication.
+This repository includes `.github/workflows/publish.yml` for npm publication, but the workflow is
+currently disabled while releases are being published from a local machine.
 
 Recommended setup:
 
-1. Configure npm trusted publishing for `doridoridoriand/opencode-memory-adapter` and the
-   workflow filename `publish.yml`.
-2. Run the workflow manually with `workflow_dispatch` when you want a packaging dry-run in GitHub
-   Actions.
-3. Bump `package.json` to the release version, push it, and create a GitHub release whose tag
-   matches that version. Both `v0.1.0` and `0.1.0` style tags are accepted.
+1. Bump `package.json` to the release version on `main`.
+2. Run `npm publish` from a machine that is already authenticated to npm.
+3. Revoke any temporary automation token immediately after publishing.
 
-The workflow runs `scan:sensitive`, `audit:package`, `build`, `test:unit`, and `test:e2e`
-before publishing. If you are not ready to use npm trusted publishing yet, you can set a
-repository secret named `NPM_TOKEN` as a temporary fallback.
+Before publishing locally, run `scan:sensitive`, `audit:package`, `build`, `test:unit`, and
+`test:e2e`.
 
 ## Configuration
 
