@@ -3,12 +3,37 @@
   "description": "OpenCode plugin that provides persistent memory functionality via multiple provider backends",
   "version": "0.1.0",
   "license": "MIT",
+  "keywords": [
+    "opencode",
+    "plugin",
+    "memory",
+    "mem0",
+    "honcho",
+    "openviking"
+  ],
+  "homepage": "https://github.com/doridoridoriand/opencode-memory-adapter#readme",
+  "bugs": {
+    "url": "https://github.com/doridoridoriand/opencode-memory-adapter/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/doridoridoriand/opencode-memory-adapter.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "type": "module",
   "main": "dist/index.js",
   "exports": "./dist/index.js",
-  "files": ["dist", "docs", "scripts/init-config.js", "README.md", "LICENSE"],
+  "files": [
+    "dist",
+    "docs",
+    "scripts/init-config.js",
+    "README.md",
+    "LICENSE"
+  ],
   "bin": {
-    "opencode-memory-adapter": "./scripts/init-config.js"
+    "opencode-memory-adapter": "scripts/init-config.js"
   },
   "scripts": {
     "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc",
@@ -37,11 +62,21 @@
     "@yfedberts/huscarl": ">=1.0.0"
   },
   "peerDependenciesMeta": {
-    "mem0ai": { "optional": true },
-    "@qdrant/js-client-rest": { "optional": true },
-    "better-sqlite3": { "optional": true },
-    "@honcho-ai/sdk": { "optional": true },
-    "@yfedberts/huscarl": { "optional": true }
+    "mem0ai": {
+      "optional": true
+    },
+    "@qdrant/js-client-rest": {
+      "optional": true
+    },
+    "better-sqlite3": {
+      "optional": true
+    },
+    "@honcho-ai/sdk": {
+      "optional": true
+    },
+    "@yfedberts/huscarl": {
+      "optional": true
+    }
   },
   "dependencies": {
     "zod": "^4.1.8"

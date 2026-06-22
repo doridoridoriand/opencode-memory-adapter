@@ -37,6 +37,23 @@ Then add to your `opencode.json`:
 
 Restart opencode after installing.
 
+## Publishing
+
+This repository includes `.github/workflows/publish.yml` for npm publication.
+
+Recommended setup:
+
+1. Configure npm trusted publishing for `doridoridoriand/opencode-memory-adapter` and the
+   workflow filename `publish.yml`.
+2. Run the workflow manually with `workflow_dispatch` when you want a packaging dry-run in GitHub
+   Actions.
+3. Bump `package.json` to the release version, push it, and create a GitHub release whose tag
+   matches that version. Both `v0.1.0` and `0.1.0` style tags are accepted.
+
+The workflow runs `scan:sensitive`, `audit:package`, `build`, `test:unit`, and `test:e2e`
+before publishing. If you are not ready to use npm trusted publishing yet, you can set a
+repository secret named `NPM_TOKEN` as a temporary fallback.
+
 ## Configuration
 
 Create `~/.config/opencode-memory-adapter/config.json` with `npx opencode-memory-adapter init`, or add
