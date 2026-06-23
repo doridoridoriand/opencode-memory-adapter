@@ -8,16 +8,20 @@ OpenCode plugin that provides persistent memory functionality via multiple provi
 npm install -g opencode-memory-adapter
 ```
 
-Install the peer dependencies for the provider you plan to use:
+The published package includes provider runtime SDKs as optional dependencies, so a normal install
+does not require separate provider-specific `npm install` commands.
+
+If your environment omits optional dependencies or an optional native build fails, install the
+provider runtime manually in the same environment where OpenCode loads the plugin:
 
 ```bash
-# mem0 (local-first, default)
+# mem0 (local-first, default fallback)
 npm install mem0ai better-sqlite3
 
-# Honcho (managed or self-hosted)
+# Honcho (managed or self-hosted fallback)
 npm install @honcho-ai/sdk
 
-# OpenViking (self-hosted server)
+# OpenViking (self-hosted server fallback)
 npm install @yfedberts/huscarl
 ```
 
@@ -101,6 +105,14 @@ After changing the config:
 
 If the provider-specific setup is correct, store and recall should work in the same session without any extra migration step.
 
+## Behavior
+
+This plugin adds memory tools only. Installing it does not make OpenCode automatically store,
+recall, or summarize memories.
+
+If you want proactive memory usage, add explicit agent instructions in your repository or team
+prompting conventions, for example through `AGENTS.md`.
+
 ## Available Tools
 
 Primary tool identifiers use hyphenated names. Snake_case aliases are also exported for compatibility.
@@ -153,17 +165,10 @@ sessionId: string (optional, provider-specific hint)
 
 ### mem0 (Default)
 Local-only by default, uses Ollama for embeddings and persists data to a local SQLite-backed vector store.
-Requires the `mem0ai` and `better-sqlite3` peer dependencies.
+The published package normally installs the `mem0ai` and `better-sqlite3` runtimes automatically.
 
-```bash
-npm install mem0ai better-sqlite3
-```
-
-If you want Qdrant instead, point `mem0.vectorStoreUrl` at a running Qdrant server and install:
-
-```bash
-npm install mem0ai @qdrant/js-client-rest better-sqlite3
-```
+If you want Qdrant instead, point `mem0.vectorStoreUrl` at a running Qdrant server. The published
+package also includes the Qdrant client runtime as an optional dependency.
 
 Example:
 
@@ -181,20 +186,16 @@ Example:
 Full guide: [docs/providers/mem0.md](./docs/providers/mem0.md)
 
 ### Honcho
-Cloud-based memory. Requires `@honcho-ai/sdk` and an API key.
-
-```bash
-npm install @honcho-ai/sdk
-```
+Cloud-based or self-hosted memory. The published package normally installs `@honcho-ai/sdk`
+automatically. Managed Honcho requires an API key; self-hosted Honcho only needs one if your
+deployment enforces API-key authentication.
 
 Full guide: [docs/providers/honcho.md](./docs/providers/honcho.md)
 
 ### OpenViking
-Server-based memory. Requires `@yfedberts/huscarl` and a running OpenViking server.
-
-```bash
-npm install @yfedberts/huscarl
-```
+Server-based memory. The published package normally installs `@yfedberts/huscarl`
+automatically; you only need a running OpenViking server and, if enabled on your deployment,
+an API key.
 
 Full guide: [docs/providers/openviking.md](./docs/providers/openviking.md)
 

@@ -4,8 +4,9 @@ Use `honcho` when you want a managed memory backend or you already run a Honcho 
 
 ## What this plugin expects
 
-- The `@honcho-ai/sdk` peer dependency.
-- A Honcho API key.
+- The published package to include its optional `@honcho-ai/sdk` runtime, or a manual install of
+  `@honcho-ai/sdk` in the same environment where OpenCode loads the plugin.
+- A Honcho API key for managed Honcho, or for self-hosted deployments that enforce API-key auth.
 - A Honcho base URL.
 - A `workspaceId` to isolate one memory pool from another.
 
@@ -13,26 +14,36 @@ Use `honcho` when you want a managed memory backend or you already run a Honcho 
 
 ```bash
 npm install -g opencode-memory-adapter
-npm install @honcho-ai/sdk
 npx opencode-memory-adapter init
 ```
 
-## 2. Get a Honcho API key
+If your npm install omits optional dependencies, or if you need to recover from a partial install,
+run:
+
+```bash
+npm install @honcho-ai/sdk
+```
+
+## 2. Get a Honcho API key if your deployment requires one
 
 Use the current Honcho docs and dashboard:
 
 - Honcho site: https://honcho.dev/
 - Honcho repository: https://github.com/plastic-labs/honcho
 
-For most users, the managed cloud endpoint is the easiest starting point.
+For most users, the managed cloud endpoint is the easiest starting point. If you run Honcho
+yourself, your deployment may not require an API key at all.
 
-## 3. Export your API key
+## 3. Export your API key when needed
 
 ```bash
 export HONCHO_API_KEY="your-honcho-api-key"
 ```
 
-The plugin config supports environment interpolation, so `${HONCHO_API_KEY}` is resolved when the config is loaded.
+If your self-hosted Honcho deployment does not require API-key auth, you can skip this step.
+
+The plugin config supports environment interpolation, so `${HONCHO_API_KEY}` is resolved when the
+config is loaded.
 
 ## 4. Configure the plugin
 
@@ -57,6 +68,19 @@ Notes:
 - `scope` still matters inside the plugin and is applied on top of the provider.
 
 If you run your own Honcho deployment, replace `baseUrl` with your server URL.
+
+Example self-hosted config without an API key:
+
+```json
+{
+  "provider": "honcho",
+  "scope": "project",
+  "honcho": {
+    "baseUrl": "http://localhost:8000",
+    "workspaceId": "my-project-memory"
+  }
+}
+```
 
 ## 5. Verify the plugin in OpenCode
 
@@ -89,6 +113,9 @@ Usually one of these is wrong:
 - `HONCHO_API_KEY`
 - `baseUrl`
 - permissions for the chosen workspace/account
+
+If you self-host Honcho without API-key auth, confirm that the server is actually configured to
+allow unauthenticated access before assuming the plugin is at fault.
 
 ### Memories are missing after a restart
 

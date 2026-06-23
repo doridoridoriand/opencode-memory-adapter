@@ -72,8 +72,10 @@ describe("HonchoProvider", () => {
     expect(sdk.search).toHaveBeenCalledWith("project", {
       limit: 3,
       filters: {
-        scope: "project",
-        category: "project",
+        metadata: {
+          scope: "project",
+          category: "project",
+        },
       },
     });
     expect(results).toEqual([
@@ -162,8 +164,10 @@ describe("HonchoProvider", () => {
       size: 10,
       reverse: true,
       filters: {
-        scope: "project",
-        category: "project",
+        metadata: {
+          scope: "project",
+          category: "project",
+        },
       },
     });
     expect(firstSession.getMetadata).not.toHaveBeenCalled();

@@ -32,10 +32,10 @@ function toMemoryResult(message: Record<string, unknown>): MemoryResult {
 }
 
 function buildSearchFilters(scope?: string, category?: string): Record<string, unknown> | undefined {
-  const filters = Object.fromEntries(
+  const metadata = Object.fromEntries(
     Object.entries({ scope, category }).filter(([, value]) => value != null)
   );
-  return Object.keys(filters).length > 0 ? filters : undefined;
+  return Object.keys(metadata).length > 0 ? { metadata } : undefined;
 }
 
 async function mapWithConcurrency<T, U>(
@@ -77,7 +77,9 @@ export class HonchoProvider extends BaseMemoryProvider {
       return this.sdk;
     } catch (error) {
       throw new Error(
-        `Failed to load Honcho provider. Ensure @honcho-ai/sdk is installed: npm install @honcho-ai/sdk\n` +
+        `Failed to load Honcho provider (@honcho-ai/sdk). ` +
+          `Ensure the package's optional dependencies were installed in the same environment where ` +
+          `OpenCode loads the cached plugin copy. If needed, reinstall it manually with: npm install @honcho-ai/sdk\n` +
           `Underlying error: ${(error as Error).message}`
       );
     }

@@ -206,14 +206,29 @@ async function runHonchoTest(pluginModule, worktree, baseUrl) {
     const recallOutput = await hooks.tool["memory-recall"].execute(
       {
         query: "honcho",
+        category: "decision",
       },
       context
     );
     assert.match(recallOutput, /Kubernetes honcho memory/);
 
-    const listOutput = await hooks.tool["memory-list"].execute({}, context);
+    const listOutput = await hooks.tool["memory-list"].execute({ category: "decision" }, context);
     assert.match(listOutput, /Kubernetes honcho memory/);
     assert.match(listOutput, new RegExp(escapeRegex(storedId)));
+
+    const stateAfterRead = await requestJson(`${baseUrl}/honcho/debug/state`);
+    assert.deepEqual(stateAfterRead.requests.searches.at(-1)?.filters, {
+      metadata: {
+        scope: "project",
+        category: "decision",
+      },
+    });
+    assert.deepEqual(stateAfterRead.requests.sessionLists.at(-1)?.filters, {
+      metadata: {
+        scope: "project",
+        category: "decision",
+      },
+    });
 
     const deleteOutput = await hooks.tool["memory-delete"].execute({ id: storedId }, context);
     assert.match(deleteOutput, /Memory deleted/);
@@ -336,11 +351,6 @@ async function main() {
         "install",
         "--silent",
         tarball,
-        "@opencode-ai/plugin",
-        "mem0ai",
-        "better-sqlite3",
-        "@honcho-ai/sdk",
-        "@yfedberts/huscarl",
       ],
       { cwd: consumerDir }
     );

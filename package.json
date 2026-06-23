@@ -54,32 +54,17 @@
     "test:smoke:k8s": "node scripts/smoke-k8s-providers.js"
   },
   "peerDependencies": {
-    "@opencode-ai/plugin": ">=1.0.0",
-    "mem0ai": ">=3.0.0",
-    "@qdrant/js-client-rest": ">=1.18.0",
-    "better-sqlite3": ">=12.6.2",
-    "@honcho-ai/sdk": ">=2.0.0",
-    "@yfedberts/huscarl": ">=1.0.0"
-  },
-  "peerDependenciesMeta": {
-    "mem0ai": {
-      "optional": true
-    },
-    "@qdrant/js-client-rest": {
-      "optional": true
-    },
-    "better-sqlite3": {
-      "optional": true
-    },
-    "@honcho-ai/sdk": {
-      "optional": true
-    },
-    "@yfedberts/huscarl": {
-      "optional": true
-    }
+    "@opencode-ai/plugin": ">=1.0.0"
   },
   "dependencies": {
     "zod": "^4.1.8"
+  },
+  "optionalDependencies": {
+    "@honcho-ai/sdk": ">=2.0.0",
+    "@qdrant/js-client-rest": ">=1.18.0",
+    "@yfedberts/huscarl": ">=1.0.0",
+    "better-sqlite3": ">=12.6.2",
+    "mem0ai": ">=3.0.0"
   },
   "devDependencies": {
     "@opencode-ai/plugin": "^1.17.0",
