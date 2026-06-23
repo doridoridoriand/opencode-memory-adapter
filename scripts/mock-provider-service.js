@@ -62,6 +62,10 @@ function createOpenAIState() {
 function createHonchoState() {
   return {
     workspaces: new Map(),
+    requests: {
+      searches: [],
+      sessionLists: [],
+    },
   };
 }
 
@@ -179,6 +183,14 @@ function matchesMetadataFilters(metadata, filters) {
   });
 }
 
+function unwrapHonchoMetadataFilters(filters) {
+  if (!filters || typeof filters !== "object") return undefined;
+  const metadata = filters.metadata;
+  return metadata && typeof metadata === "object" && !Array.isArray(metadata)
+    ? metadata
+    : undefined;
+}
+
 function paginate(items, query) {
   const page = Number.parseInt(String(query.get("page") ?? "1"), 10) || 1;
   const size = Number.parseInt(String(query.get("size") ?? "50"), 10) || 50;
@@ -240,6 +252,7 @@ function findOpenVikingFiles(targetPath) {
 
 function serializeHonchoState() {
   return {
+    requests: state.honcho.requests,
     workspaces: [...state.honcho.workspaces.values()].map((workspace) => ({
       id: workspace.id,
       metadata: workspace.metadata,
@@ -371,6 +384,11 @@ async function handleHoncho(req, res, pathname, url) {
     const body = await readBody(req);
     const query = String(body.query ?? "").toLowerCase();
     const limit = Number(body.limit ?? 10);
+    state.honcho.requests.searches.push({
+      query: body.query ?? "",
+      filters: body.filters ?? null,
+      limit,
+    });
     const messages = [...workspace.sessions.values()]
       .flatMap((session) =>
         session.messages.map((message) => ({
@@ -380,7 +398,10 @@ async function handleHoncho(req, res, pathname, url) {
       )
       .filter(
         ({ message, sessionMetadata }) =>
-          matchesMetadataFilters(message.metadata ?? sessionMetadata, body.filters) &&
+          matchesMetadataFilters(
+            message.metadata ?? sessionMetadata,
+            unwrapHonchoMetadataFilters(body.filters)
+          ) &&
           (query.length === 0 || message.content.toLowerCase().includes(query))
       )
       .map(({ message }) => message)
@@ -407,10 +428,17 @@ async function handleHoncho(req, res, pathname, url) {
 
   if (req.method === "POST" && segments.length === 5 && segments[3] === "sessions" && segments[4] === "list") {
     const body = await readBody(req);
+    state.honcho.requests.sessionLists.push({
+      filters: body.filters ?? null,
+      page: url.searchParams.get("page"),
+      size: url.searchParams.get("size"),
+      reverse: url.searchParams.get("reverse"),
+    });
     const sessions = [...workspace.sessions.values()].filter((session) => {
       const latestMessage = session.messages.at(-1);
-      return matchesMetadataFilters(session.metadata, body.filters) ||
-        matchesMetadataFilters(latestMessage?.metadata, body.filters);
+      const metadataFilters = unwrapHonchoMetadataFilters(body.filters);
+      return matchesMetadataFilters(session.metadata, metadataFilters) ||
+        matchesMetadataFilters(latestMessage?.metadata, metadataFilters);
     });
     json(
       res,

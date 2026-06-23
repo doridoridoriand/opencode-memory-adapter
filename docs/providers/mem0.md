@@ -17,8 +17,15 @@ Important:
 
 ```bash
 npm install -g opencode-memory-adapter
-npm install mem0ai better-sqlite3
 npx opencode-memory-adapter init
+```
+
+The published package normally installs `mem0ai` and `better-sqlite3` automatically as optional
+runtime dependencies. If your environment omits optional dependencies, or if `better-sqlite3`
+fails to build, install them manually:
+
+```bash
+npm install mem0ai better-sqlite3
 ```
 
 ## 2. Install and start Ollama
@@ -119,10 +126,10 @@ If you already run a Qdrant server, configure `mem0` like this:
 }
 ```
 
-You also need the Qdrant peer dependency:
+If your environment omitted optional dependencies, install the full Qdrant-capable runtime set manually:
 
 ```bash
-npm install @qdrant/js-client-rest
+npm install mem0ai @qdrant/js-client-rest better-sqlite3
 ```
 
 Use Qdrant only when you intentionally want a running external vector database. For simple local use, stick with the default SQLite-backed mode.
@@ -139,7 +146,8 @@ You installed Ollama but did not pull the models configured in `llmModel` and `e
 
 ### `better-sqlite3` load error
 
-The peer dependency is missing or failed to build for your Node/runtime environment. Reinstall `better-sqlite3` in the same environment where OpenCode loads the plugin.
+The optional dependency is missing or failed to build for your Node/runtime environment. Reinstall
+`better-sqlite3` in the same environment where OpenCode loads the plugin.
 
 ### Store works but nothing is recalled
 

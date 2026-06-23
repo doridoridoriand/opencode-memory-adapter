@@ -4,7 +4,8 @@ Use `openviking` when you want a self-hosted memory server with filesystem-style
 
 ## What this plugin expects
 
-- The `@yfedberts/huscarl` peer dependency.
+- The published package to include its optional `@yfedberts/huscarl` runtime, or a manual install
+  of `@yfedberts/huscarl` in the same environment where OpenCode loads the plugin.
 - A reachable OpenViking server URL.
 - An API key if your server requires one.
 
@@ -12,8 +13,14 @@ Use `openviking` when you want a self-hosted memory server with filesystem-style
 
 ```bash
 npm install -g opencode-memory-adapter
-npm install @yfedberts/huscarl
 npx opencode-memory-adapter init
+```
+
+If your npm install omits optional dependencies, or if you need to recover from a partial install,
+run:
+
+```bash
+npm install @yfedberts/huscarl
 ```
 
 ## 2. Start or provision an OpenViking server

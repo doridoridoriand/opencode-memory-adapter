@@ -6,13 +6,13 @@ Use this directory when you want provider-specific setup instructions instead of
 
 | Provider | Best fit | What you need | Guide |
 | --- | --- | --- | --- |
-| `mem0` | Local-first development, minimal infrastructure, private on-disk storage | Ollama, `mem0ai`, `better-sqlite3` | [mem0.md](./mem0.md) |
-| `honcho` | Managed memory or an existing Honcho deployment | Honcho API key, `@honcho-ai/sdk` | [honcho.md](./honcho.md) |
-| `openviking` | Self-hosted server and filesystem-style memory resources | Running OpenViking server, `@yfedberts/huscarl` | [openviking.md](./openviking.md) |
+| `mem0` | Local-first development, minimal infrastructure, private on-disk storage | Ollama, writable local storage | [mem0.md](./mem0.md) |
+| `honcho` | Managed memory or an existing Honcho deployment | Reachable Honcho deployment, API key when the deployment requires one | [honcho.md](./honcho.md) |
+| `openviking` | Self-hosted server and filesystem-style memory resources | Running OpenViking server, API key only when enabled on that server | [openviking.md](./openviking.md) |
 
 ## Common workflow
 
-1. Install `opencode-memory-adapter` and the peer dependencies for exactly one provider.
+1. Install `opencode-memory-adapter`.
 2. Run `npx opencode-memory-adapter init`.
 3. Update `~/.config/opencode-memory-adapter/config.json` or create a project-local `.opencode-memory-adapter.json`.
 4. Set `"provider"` to `mem0`, `honcho`, or `openviking`.
@@ -28,6 +28,12 @@ Use this directory when you want provider-specific setup instructions instead of
 ## Recommended first choice
 
 Start with `mem0` unless you already know you want a hosted memory service or a self-hosted server. It has the fewest moving parts once Ollama is running.
+
+## Tool-only behavior
+
+This plugin adds tools only. OpenCode will not automatically persist memories just because the
+plugin is installed. If you want proactive memory usage, pair the plugin with repository or team
+instructions such as `AGENTS.md`.
 
 ## Verification checklist
 
