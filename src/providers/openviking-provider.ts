@@ -1,7 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
 import { BaseMemoryProvider } from "./base.js";
 import { normalizeMemoryMetadata } from "./metadata.js";
 import type { ListOptions, MemoryMetadata, MemoryResult, OpenVikingConfig, SearchOptions } from "../types.js";
@@ -33,12 +30,28 @@ function buildResourceUri(path: string): string {
   return `${RESOURCE_URI_PREFIX}${path}`;
 }
 
+function toWebdavPath(path: string): string {
+  return path
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+}
+
+function trimTrailingSlash(value: string): string {
+  return value.endsWith("/") ? value.slice(0, -1) : value;
+}
+
 function stripResourceUri(uri: string): string {
   return uri.startsWith(RESOURCE_URI_PREFIX) ? uri.slice(RESOURCE_URI_PREFIX.length) : uri;
 }
 
 function isMemoryResourcePath(path: string): boolean {
-  return path.startsWith(`${RESOURCE_ROOT}/`) && path.endsWith(".md");
+  if (!path.startsWith(`${RESOURCE_ROOT}/`) || !path.endsWith(".md")) {
+    return false;
+  }
+
+  const leaf = path.split("/").at(-1) ?? "";
+  return !leaf.startsWith(".");
 }
 
 function parseMetadataComment(line: string): Record<string, unknown> | null {
@@ -104,6 +117,65 @@ export class OpenVikingProvider extends BaseMemoryProvider {
     this.config = config;
   }
 
+  private getBaseUrl(): string {
+    return trimTrailingSlash(this.config.url ?? "http://localhost:1933");
+  }
+
+  private getHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
+      "content-type": "application/json",
+    };
+
+    if (this.config.apiKey) {
+      headers["x-api-key"] = this.config.apiKey;
+    }
+
+    return headers;
+  }
+
+  private async postJson<T>(path: string, body: unknown): Promise<T | undefined> {
+    const response = await fetch(`${this.getBaseUrl()}${path}`, {
+      method: "POST",
+      headers: this.getHeaders(),
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(
+        `OpenViking request failed (${response.status} ${response.statusText}): ${text}`
+      );
+    }
+
+    const contentType = response.headers.get("content-type") ?? "";
+    if (!contentType.includes("application/json")) {
+      return undefined;
+    }
+
+    return response.json() as Promise<T>;
+  }
+
+  private async putText(path: string, content: string): Promise<void> {
+    const headers: Record<string, string> = {};
+
+    if (this.config.apiKey) {
+      headers["x-api-key"] = this.config.apiKey;
+    }
+
+    const response = await fetch(`${this.getBaseUrl()}/webdav/resources/${toWebdavPath(path)}`, {
+      method: "PUT",
+      headers,
+      body: content,
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(
+        `OpenViking WebDAV PUT failed (${response.status} ${response.statusText}): ${text}`
+      );
+    }
+  }
+
   private async getSdk(): Promise<any> {
     if (this.sdk) return this.sdk;
 
@@ -127,14 +199,15 @@ export class OpenVikingProvider extends BaseMemoryProvider {
   }
 
   private async ensureResourceDirectory(path: string): Promise<void> {
-    const sdk = await this.getSdk();
     const segments = path.split("/");
     const dirs: string[] = [];
 
     for (const segment of segments) {
       dirs.push(segment);
       try {
-        await sdk.resources.createDirectory(dirs.join("/"));
+        await this.postJson("/api/v1/fs/mkdir", {
+          uri: buildResourceUri(dirs.join("/")),
+        });
       } catch {
         // Directory creation is idempotent for our purposes.
       }
@@ -179,7 +252,6 @@ export class OpenVikingProvider extends BaseMemoryProvider {
   }
 
   async add(content: string, metadata: MemoryMetadata): Promise<{ id: string }> {
-    const sdk = await this.getSdk();
     const id = randomUUID();
     const normalizedMetadata = normalizeMemoryMetadata({
       ...metadata,
@@ -190,21 +262,15 @@ export class OpenVikingProvider extends BaseMemoryProvider {
       normalizedMetadata.scope,
       normalizedMetadata.category
     );
-    const tempDir = await mkdtemp(join(tmpdir(), "opencode-memory-adapter-"));
-    const filePath = join(tempDir, `${id}.md`);
+    const targetPath = `${targetDirectory}/${id}.md`;
 
-    await writeFile(filePath, serializeMemoryContent(content, normalizedMetadata), "utf8");
+    await this.ensureResourceDirectory(targetDirectory);
+    await this.putText(targetPath, serializeMemoryContent(content, normalizedMetadata));
+    await this.postJson("/api/v1/system/wait", {
+      timeout: 120,
+    });
 
-    try {
-      await this.ensureResourceDirectory(targetDirectory);
-      await sdk.resources.add(filePath, {
-        target: `${targetDirectory}/`,
-        wait: true,
-      });
-      return { id };
-    } finally {
-      await rm(tempDir, { recursive: true, force: true });
-    }
+    return { id };
   }
 
   async search(query: string, opts: SearchOptions): Promise<MemoryResult[]> {
@@ -243,6 +309,9 @@ export class OpenVikingProvider extends BaseMemoryProvider {
     const path = await this.findPathById(id);
     if (!path) return;
     await sdk.resources.remove(path);
+    await this.postJson("/api/v1/system/wait", {
+      timeout: 120,
+    });
   }
 
   async list(opts: ListOptions): Promise<MemoryResult[]> {
