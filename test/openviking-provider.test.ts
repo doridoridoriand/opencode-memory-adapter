@@ -327,4 +327,41 @@ describe("OpenVikingProvider", () => {
     });
     expect(summary).toBe("[conversation] Recent conversation\n[decision] Recent decision");
   });
+
+  it("returns success when wait fails after delete", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ error: "queue timeout" }), {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      })
+    );
+    const resources = {
+      list: vi.fn().mockResolvedValue([
+        {
+          uri: "viking://resources/opencode-memory-adapter/project/decision/delete-me.md",
+          isDir: false,
+        },
+      ]),
+      remove: vi.fn().mockResolvedValue(undefined),
+      read: vi.fn(),
+      createDirectory: vi.fn(),
+      add: vi.fn(),
+    };
+    const provider = new OpenVikingProvider();
+    (provider as any).getSdk = vi.fn().mockResolvedValue({
+      resources,
+      retrieval: { find: vi.fn() },
+    });
+
+    await expect(provider.delete("delete-me")).resolves.toBeUndefined();
+
+    expect(resources.remove).toHaveBeenCalledWith(
+      "opencode-memory-adapter/project/decision/delete-me.md"
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      "[opencode-memory-adapter] OpenViking wait after delete failed; memory was removed but indexing may lag briefly.",
+      expect.any(Error)
+    );
+  });
 });

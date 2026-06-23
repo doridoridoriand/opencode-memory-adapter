@@ -316,9 +316,16 @@ export class OpenVikingProvider extends BaseMemoryProvider {
     const path = await this.findPathById(id);
     if (!path) return;
     await sdk.resources.remove(path);
-    await this.postJson("/api/v1/system/wait", {
-      timeout: 120,
-    });
+    try {
+      await this.postJson("/api/v1/system/wait", {
+        timeout: 120,
+      });
+    } catch (error) {
+      console.warn(
+        "[opencode-memory-adapter] OpenViking wait after delete failed; memory was removed but indexing may lag briefly.",
+        error
+      );
+    }
   }
 
   async list(opts: ListOptions): Promise<MemoryResult[]> {
