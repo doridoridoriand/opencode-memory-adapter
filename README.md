@@ -195,7 +195,8 @@ Full guide: [docs/providers/honcho.md](./docs/providers/honcho.md)
 ### OpenViking
 Server-based memory. The published package normally installs `@yfedberts/huscarl`
 automatically; you only need a running OpenViking server and, if enabled on your deployment,
-an API key.
+an API key. The provider writes resources through OpenViking's filesystem and WebDAV endpoints,
+then waits for indexing before returning from `memory-store`.
 
 Full guide: [docs/providers/openviking.md](./docs/providers/openviking.md)
 

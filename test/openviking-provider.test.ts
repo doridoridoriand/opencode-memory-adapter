@@ -1,42 +1,36 @@
-import { access, readFile, rm } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { mkdtemp } from "node:fs/promises";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { OpenVikingProvider } from "../src/providers/openviking-provider.js";
 
-const tempDirs: string[] = [];
-
-async function makeTempDir(prefix: string): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), prefix));
-  tempDirs.push(dir);
-  return dir;
-}
-
 afterEach(async () => {
   vi.restoreAllMocks();
-  await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 
 describe("OpenVikingProvider", () => {
-  it("stores memories as markdown resources and cleans up temp files", async () => {
-    let uploadedFile = "";
-    let uploadedContents = "";
-    const resources = {
-      createDirectory: vi.fn().mockResolvedValue(undefined),
-      add: vi.fn(async (filePath: string) => {
-        uploadedFile = filePath;
-        uploadedContents = await readFile(filePath, "utf8");
-      }),
-      read: vi.fn(),
-      list: vi.fn(),
-      remove: vi.fn(),
-    };
-    const provider = new OpenVikingProvider();
-    (provider as any).getSdk = vi.fn().mockResolvedValue({
-      resources,
-      retrieval: { find: vi.fn() },
+  it("stores memories through WebDAV and waits for indexing", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+      const url = typeof input === "string" ? input : input.url;
+
+      if (url.endsWith("/api/v1/fs/mkdir")) {
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      if (url.includes("/webdav/resources/")) {
+        return new Response("", { status: 201 });
+      }
+
+      if (url.endsWith("/api/v1/system/wait")) {
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
     });
+    const provider = new OpenVikingProvider();
 
     const result = await provider.add("Ship release notes", {
       category: "decision",
@@ -48,27 +42,81 @@ describe("OpenVikingProvider", () => {
     expect(result.id).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     );
-    expect(resources.createDirectory).toHaveBeenNthCalledWith(1, "opencode-memory-adapter");
-    expect(resources.createDirectory).toHaveBeenNthCalledWith(
-      2,
-      "opencode-memory-adapter/project"
-    );
-    expect(resources.createDirectory).toHaveBeenNthCalledWith(
-      3,
-      "opencode-memory-adapter/project/decision"
-    );
-    expect(resources.add).toHaveBeenCalledWith(expect.any(String), {
-      target: "opencode-memory-adapter/project/decision/",
-      wait: true,
-    });
 
-    expect(uploadedContents).toContain("Ship release notes");
-    expect(uploadedContents).toContain("\"scope\":\"project\"");
-    expect(uploadedContents).toContain("\"source\":\"unit-test\"");
-    await expect(access(uploadedFile)).rejects.toThrow();
+    const mkdirCalls = fetchMock.mock.calls.filter(([url]) =>
+      String(url).endsWith("/api/v1/fs/mkdir")
+    );
+    expect(mkdirCalls).toHaveLength(3);
+    expect(mkdirCalls.map(([, request]) => JSON.parse(String(request?.body)))).toEqual([
+      { uri: "viking://resources/opencode-memory-adapter" },
+      { uri: "viking://resources/opencode-memory-adapter/project" },
+      { uri: "viking://resources/opencode-memory-adapter/project/decision" },
+    ]);
+
+    const putCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes("/webdav/resources/")
+    );
+    expect(putCall?.[0]).toBe(
+      `http://localhost:1933/webdav/resources/opencode-memory-adapter/project/decision/${result.id}.md`
+    );
+    expect(String(putCall?.[1]?.body)).toContain("Ship release notes");
+    expect(String(putCall?.[1]?.body)).toContain("\"scope\":\"project\"");
+    expect(String(putCall?.[1]?.body)).toContain("\"source\":\"unit-test\"");
+
+    const waitCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).endsWith("/api/v1/system/wait")
+    );
+    expect(waitCall?.[1]).toMatchObject({
+      method: "POST",
+      body: JSON.stringify({ timeout: 120 }),
+    });
   });
 
-  it("searches retrieved resources and ignores non-memory files", async () => {
+  it("returns success when wait fails after the WebDAV write", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = typeof input === "string" ? input : input.url;
+
+      if (url.endsWith("/api/v1/fs/mkdir")) {
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      if (url.includes("/webdav/resources/")) {
+        return new Response("", { status: 201 });
+      }
+
+      if (url.endsWith("/api/v1/system/wait")) {
+        return new Response(JSON.stringify({ error: "queue timeout" }), {
+          status: 500,
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    const provider = new OpenVikingProvider();
+
+    const result = await provider.add("Persist first, index later", {
+      category: "decision",
+      scope: "project",
+    });
+
+    expect(result.id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    );
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/webdav/resources/"))).toBe(
+      true
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      "[opencode-memory-adapter] OpenViking wait after add failed; memory was stored but indexing may lag briefly.",
+      expect.any(Error)
+    );
+  });
+
+  it("searches retrieved resources and ignores internal or non-memory files", async () => {
     const resources = {
       read: vi.fn(async (path: string) => {
         if (path.endsWith("/keep.md")) {
@@ -91,6 +139,10 @@ describe("OpenVikingProvider", () => {
           {
             uri: "viking://resources/opencode-memory-adapter/global/conversation/skip.md",
             score: 0.25,
+          },
+          {
+            uri: "viking://resources/opencode-memory-adapter/project/decision/.overview.md",
+            score: 0.7,
           },
           {
             uri: "viking://resources/other/random.txt",
@@ -124,6 +176,9 @@ describe("OpenVikingProvider", () => {
         relevance: 0.88,
       },
     ]);
+    expect(resources.read).not.toHaveBeenCalledWith(
+      "opencode-memory-adapter/project/decision/.overview.md"
+    );
   });
 
   it("returns an empty result when the retrieval target does not exist", async () => {
@@ -173,6 +228,11 @@ describe("OpenVikingProvider", () => {
           isDir: false,
           modTime: "2025-01-04T00:00:00.000Z",
         },
+        {
+          uri: "viking://resources/opencode-memory-adapter/project/decision/.abstract.md",
+          isDir: false,
+          modTime: "2025-01-05T00:00:00.000Z",
+        },
       ]),
       read: vi.fn(async (path: string) => {
         if (path.endsWith("/newer.md")) {
@@ -209,9 +269,18 @@ describe("OpenVikingProvider", () => {
         },
       },
     ]);
+    expect(resources.read).not.toHaveBeenCalledWith(
+      "opencode-memory-adapter/project/decision/.abstract.md"
+    );
   });
 
-  it("deletes resources by resolved id and summarizes recent search results", async () => {
+  it("deletes resources by resolved id, waits for reindexing, and summarizes recent search results", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      })
+    );
     const resources = {
       list: vi.fn().mockResolvedValue([
         {
@@ -249,6 +318,50 @@ describe("OpenVikingProvider", () => {
     expect(resources.remove).toHaveBeenCalledWith(
       "opencode-memory-adapter/project/decision/delete-me.md"
     );
+    expect(fetchMock).toHaveBeenCalledWith("http://localhost:1933/api/v1/system/wait", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({ timeout: 120 }),
+    });
     expect(summary).toBe("[conversation] Recent conversation\n[decision] Recent decision");
+  });
+
+  it("returns success when wait fails after delete", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ error: "queue timeout" }), {
+        status: 500,
+        headers: { "content-type": "application/json" },
+      })
+    );
+    const resources = {
+      list: vi.fn().mockResolvedValue([
+        {
+          uri: "viking://resources/opencode-memory-adapter/project/decision/delete-me.md",
+          isDir: false,
+        },
+      ]),
+      remove: vi.fn().mockResolvedValue(undefined),
+      read: vi.fn(),
+      createDirectory: vi.fn(),
+      add: vi.fn(),
+    };
+    const provider = new OpenVikingProvider();
+    (provider as any).getSdk = vi.fn().mockResolvedValue({
+      resources,
+      retrieval: { find: vi.fn() },
+    });
+
+    await expect(provider.delete("delete-me")).resolves.toBeUndefined();
+
+    expect(resources.remove).toHaveBeenCalledWith(
+      "opencode-memory-adapter/project/decision/delete-me.md"
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      "[opencode-memory-adapter] OpenViking wait after delete failed; memory was removed but indexing may lag briefly.",
+      expect.any(Error)
+    );
   });
 });

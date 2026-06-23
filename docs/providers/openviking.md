@@ -84,7 +84,8 @@ Implementation detail that helps when debugging:
 
 - Each memory is written as a markdown resource under `opencode-memory-adapter/<scope>/<category>/<uuid>.md`.
 - The file begins with a JSON metadata comment, followed by the memory text.
-- The plugin uploads with `wait: true`, so a successful `memory-store` should be searchable immediately.
+- The plugin creates directories through `/api/v1/fs/mkdir`, uploads the markdown body with WebDAV `PUT`, then waits on `/api/v1/system/wait` so a successful `memory-store` is searchable immediately.
+- OpenViking may generate internal `.abstract.md` and `.overview.md` files beside your resources. The plugin ignores those helper files during `memory-list` and `memory-recall`.
 
 If you are working inside this repository, the Kubernetes smoke test also exercises OpenViking end-to-end:
 
@@ -114,7 +115,7 @@ Check:
 - the OpenViking server finished indexing the uploaded file
 - the server is actually searching the `opencode-memory-adapter/...` resource tree
 
-In this plugin, add uses `wait: true`, so indexing delay should usually not be the cause. If recall still fails, inspect the uploaded resources on the server side.
+In this plugin, add waits on `/api/v1/system/wait`, so indexing delay should usually not be the cause. If recall still fails, inspect the uploaded resources on the server side.
 
 ### I want to inspect what was written
 
