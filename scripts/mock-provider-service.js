@@ -186,7 +186,9 @@ function matchesMetadataFilters(metadata, filters) {
 function unwrapHonchoMetadataFilters(filters) {
   if (!filters || typeof filters !== "object") return undefined;
   const metadata = filters.metadata;
-  return metadata && typeof metadata === "object" ? metadata : undefined;
+  return metadata && typeof metadata === "object" && !Array.isArray(metadata)
+    ? metadata
+    : undefined;
 }
 
 function paginate(items, query) {

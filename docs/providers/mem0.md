@@ -126,10 +126,10 @@ If you already run a Qdrant server, configure `mem0` like this:
 }
 ```
 
-If your environment omitted optional dependencies, install the Qdrant client manually:
+If your environment omitted optional dependencies, install the full Qdrant-capable runtime set manually:
 
 ```bash
-npm install @qdrant/js-client-rest
+npm install mem0ai @qdrant/js-client-rest better-sqlite3
 ```
 
 Use Qdrant only when you intentionally want a running external vector database. For simple local use, stick with the default SQLite-backed mode.
