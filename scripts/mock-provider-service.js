@@ -27,6 +27,17 @@ function readBody(req) {
   });
 }
 
+function readTextBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on("data", (chunk) => chunks.push(chunk));
+    req.on("end", () => {
+      resolve(Buffer.concat(chunks).toString("utf8"));
+    });
+    req.on("error", reject);
+  });
+}
+
 function normalizePathname(pathname) {
   return pathname.replace(/\/+$/, "") || "/";
 }
@@ -539,6 +550,28 @@ async function handleOpenViking(req, res, pathname, url) {
     return true;
   }
 
+  if (req.method === "PUT" && pathname.startsWith("/openviking/webdav/resources/")) {
+    const destinationPath = pathname
+      .replace(/^\/openviking\/webdav\/resources\//, "")
+      .split("/")
+      .map((segment) => decodeURIComponent(segment))
+      .join("/")
+      .replace(/^\/+|\/+$/g, "");
+    const content = await readTextBody(req);
+    const targetDir = dirname(destinationPath).replace(/^\.$/, "");
+
+    ensureOpenVikingDirectory(targetDir);
+    state.openviking.files.set(destinationPath, {
+      path: destinationPath,
+      content,
+      uri: `viking://resources/${destinationPath}`,
+      modTime: nowIso(),
+    });
+    res.statusCode = 201;
+    res.end("");
+    return true;
+  }
+
   const apiPath = pathname.replace(/^\/openviking/, "");
   if (!apiPath.startsWith("/api/v1")) {
     return false;
@@ -548,6 +581,11 @@ async function handleOpenViking(req, res, pathname, url) {
     const body = await readBody(req);
     ensureOpenVikingDirectory(parseVikingResourcePath(body.uri));
     json(res, 200, { status: "ok", result: { uri: body.uri } });
+    return true;
+  }
+
+  if (req.method === "POST" && apiPath === "/api/v1/system/wait") {
+    json(res, 200, { status: "ok", result: { done: true } });
     return true;
   }
 

@@ -266,9 +266,16 @@ export class OpenVikingProvider extends BaseMemoryProvider {
 
     await this.ensureResourceDirectory(targetDirectory);
     await this.putText(targetPath, serializeMemoryContent(content, normalizedMetadata));
-    await this.postJson("/api/v1/system/wait", {
-      timeout: 120,
-    });
+    try {
+      await this.postJson("/api/v1/system/wait", {
+        timeout: 120,
+      });
+    } catch (error) {
+      console.warn(
+        "[opencode-memory-adapter] OpenViking wait after add failed; memory was stored but indexing may lag briefly.",
+        error
+      );
+    }
 
     return { id };
   }

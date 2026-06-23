@@ -72,6 +72,50 @@ describe("OpenVikingProvider", () => {
     });
   });
 
+  it("returns success when wait fails after the WebDAV write", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = typeof input === "string" ? input : input.url;
+
+      if (url.endsWith("/api/v1/fs/mkdir")) {
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      if (url.includes("/webdav/resources/")) {
+        return new Response("", { status: 201 });
+      }
+
+      if (url.endsWith("/api/v1/system/wait")) {
+        return new Response(JSON.stringify({ error: "queue timeout" }), {
+          status: 500,
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    const provider = new OpenVikingProvider();
+
+    const result = await provider.add("Persist first, index later", {
+      category: "decision",
+      scope: "project",
+    });
+
+    expect(result.id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    );
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/webdav/resources/"))).toBe(
+      true
+    );
+    expect(warnSpy).toHaveBeenCalledWith(
+      "[opencode-memory-adapter] OpenViking wait after add failed; memory was stored but indexing may lag briefly.",
+      expect.any(Error)
+    );
+  });
+
   it("searches retrieved resources and ignores internal or non-memory files", async () => {
     const resources = {
       read: vi.fn(async (path: string) => {
