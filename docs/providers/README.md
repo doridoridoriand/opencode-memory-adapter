@@ -23,6 +23,7 @@ Use this directory when you want provider-specific setup instructions instead of
 
 - Use the global config at `~/.config/opencode-memory-adapter/config.json` if you want the same provider and credentials across many repositories.
 - Use `.opencode-memory-adapter.json` in a single repository if that project should have its own provider, workspace, URL, or storage paths.
+- A project-local config is the safest way to test `mem0` while keeping an existing global `honcho` or `openviking` setup unchanged.
 - Project config overrides global config.
 
 ## Recommended first choice

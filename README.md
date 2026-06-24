@@ -25,6 +25,14 @@ npm install @honcho-ai/sdk
 npm install @yfedberts/huscarl
 ```
 
+If OpenCode is loading plugins from a local consumer install, run the manual install there. For
+example:
+
+```bash
+cd ~/.config/opencode
+npm install --no-save mem0ai better-sqlite3
+```
+
 Then generate the starter config:
 
 ```bash
@@ -166,6 +174,17 @@ sessionId: string (optional, provider-specific hint)
 ### mem0 (Default)
 Local-only by default, uses Ollama for embeddings and persists data to a local SQLite-backed vector store.
 The published package normally installs the `mem0ai` and `better-sqlite3` runtimes automatically.
+
+If you are already using another provider globally, the safest way to try `mem0` is with a
+project-local `.opencode-memory-adapter.json` so you do not have to replace the global provider
+config.
+
+The generated starter config uses `qwen2.5:7b` and `nomic-embed-text`, but smaller local models
+such as `qwen2.5:3b` and `qwen3-embedding:0.6b` also work if those are the ones you already have
+in Ollama.
+
+mem0 may normalize or rewrite stored memories into a more canonical sentence. Recall and list
+results therefore do not always echo the original text verbatim.
 
 If you want Qdrant instead, point `mem0.vectorStoreUrl` at a running Qdrant server. The published
 package also includes the Qdrant client runtime as an optional dependency.
