@@ -78,9 +78,9 @@ Minimal local config:
     "ollamaBaseUrl": "http://localhost:11434",
     "llmModel": "qwen2.5:7b",
     "embedModel": "nomic-embed-text",
-    "historyDbPath": "~/.local/share/opencode-memory-adapter/mem0/history.db",
+    "historyDbPath": "${HOME}/.local/share/opencode-memory-adapter/mem0/history.db",
     "vectorStoreProvider": "memory",
-    "vectorStorePath": "~/.local/share/opencode-memory-adapter/mem0/vector_store.db",
+    "vectorStorePath": "${HOME}/.local/share/opencode-memory-adapter/mem0/vector_store.db",
     "collectionName": "opencode-memory-adapter"
   }
 }
@@ -91,6 +91,7 @@ Notes:
 - `scope: "project"` is a good default if you do not want memories from unrelated repositories mixed together.
 - `ollamaBaseUrl` can omit `/v1`; the plugin adds it automatically for OpenAI-compatible clients.
 - `historyDbPath` and `vectorStorePath` should point to writable paths.
+- Config values support `${...}` environment-variable interpolation. Use `${HOME}/...` or another absolute path for SQLite files; a literal `~` is not expanded.
 - If you already use `honcho` or `openviking` globally, create this as a project-local `.opencode-memory-adapter.json` while testing `mem0`. That leaves your global config untouched.
 
 ## 4a. Smaller local-model example
@@ -106,9 +107,9 @@ this also works:
     "ollamaBaseUrl": "http://localhost:11434",
     "llmModel": "qwen2.5:3b",
     "embedModel": "qwen3-embedding:0.6b",
-    "historyDbPath": "~/.local/share/opencode-memory-adapter/mem0/history.db",
+    "historyDbPath": "${HOME}/.local/share/opencode-memory-adapter/mem0/history.db",
     "vectorStoreProvider": "memory",
-    "vectorStorePath": "~/.local/share/opencode-memory-adapter/mem0/vector_store.db",
+    "vectorStorePath": "${HOME}/.local/share/opencode-memory-adapter/mem0/vector_store.db",
     "collectionName": "opencode-memory-adapter"
   }
 }
@@ -163,7 +164,7 @@ If you already run a Qdrant server, configure `mem0` like this:
     "ollamaBaseUrl": "http://localhost:11434",
     "llmModel": "qwen2.5:7b",
     "embedModel": "nomic-embed-text",
-    "historyDbPath": "~/.local/share/opencode-memory-adapter/mem0/history.db",
+    "historyDbPath": "${HOME}/.local/share/opencode-memory-adapter/mem0/history.db",
     "vectorStoreProvider": "qdrant",
     "vectorStoreUrl": "http://127.0.0.1:6333",
     "collectionName": "opencode-memory-adapter"
