@@ -28,6 +28,16 @@ fails to build, install them manually:
 npm install mem0ai better-sqlite3
 ```
 
+Important:
+
+- Install those packages in the same environment where OpenCode loads the plugin.
+- If your OpenCode setup uses a local consumer install, run the install there instead of some other shell project:
+
+```bash
+cd ~/.config/opencode
+npm install --no-save mem0ai better-sqlite3
+```
+
 ## 2. Install and start Ollama
 
 Install Ollama from the official download page:
@@ -68,9 +78,9 @@ Minimal local config:
     "ollamaBaseUrl": "http://localhost:11434",
     "llmModel": "qwen2.5:7b",
     "embedModel": "nomic-embed-text",
-    "historyDbPath": "~/.local/share/opencode-memory-adapter/mem0/history.db",
+    "historyDbPath": "${HOME}/.local/share/opencode-memory-adapter/mem0/history.db",
     "vectorStoreProvider": "memory",
-    "vectorStorePath": "~/.local/share/opencode-memory-adapter/mem0/vector_store.db",
+    "vectorStorePath": "${HOME}/.local/share/opencode-memory-adapter/mem0/vector_store.db",
     "collectionName": "opencode-memory-adapter"
   }
 }
@@ -81,6 +91,36 @@ Notes:
 - `scope: "project"` is a good default if you do not want memories from unrelated repositories mixed together.
 - `ollamaBaseUrl` can omit `/v1`; the plugin adds it automatically for OpenAI-compatible clients.
 - `historyDbPath` and `vectorStorePath` should point to writable paths.
+- Config values support `${...}` environment-variable interpolation. Use `${HOME}/...` or another absolute path for SQLite files; a literal `~` is not expanded.
+- If you already use `honcho` or `openviking` globally, create this as a project-local `.opencode-memory-adapter.json` while testing `mem0`. That leaves your global config untouched.
+
+## 4a. Smaller local-model example
+
+If the generated default models are not installed locally, or you want a lighter setup for a laptop,
+this also works:
+
+```json
+{
+  "provider": "mem0",
+  "scope": "project",
+  "mem0": {
+    "ollamaBaseUrl": "http://localhost:11434",
+    "llmModel": "qwen2.5:3b",
+    "embedModel": "qwen3-embedding:0.6b",
+    "historyDbPath": "${HOME}/.local/share/opencode-memory-adapter/mem0/history.db",
+    "vectorStoreProvider": "memory",
+    "vectorStorePath": "${HOME}/.local/share/opencode-memory-adapter/mem0/vector_store.db",
+    "collectionName": "opencode-memory-adapter"
+  }
+}
+```
+
+Pull those models before testing:
+
+```bash
+ollama pull qwen2.5:3b
+ollama pull qwen3-embedding:0.6b
+```
 
 ## 5. Verify Ollama before starting OpenCode
 
@@ -107,6 +147,12 @@ If you are working inside this repository, you can also run the packaged smoke t
 npm run test:smoke:mem0
 ```
 
+What to expect:
+
+- `memory-store`, `memory-recall`, `memory-list`, and `memory-delete` should all succeed in the same session.
+- `historyDbPath` and `vectorStorePath` should be created on disk.
+- mem0 may rewrite the stored text into a normalized memory sentence, so recall output may not contain the exact original wording.
+
 ## Optional: use Qdrant instead of the local SQLite vector store
 
 If you already run a Qdrant server, configure `mem0` like this:
@@ -118,7 +164,7 @@ If you already run a Qdrant server, configure `mem0` like this:
     "ollamaBaseUrl": "http://localhost:11434",
     "llmModel": "qwen2.5:7b",
     "embedModel": "nomic-embed-text",
-    "historyDbPath": "~/.local/share/opencode-memory-adapter/mem0/history.db",
+    "historyDbPath": "${HOME}/.local/share/opencode-memory-adapter/mem0/history.db",
     "vectorStoreProvider": "qdrant",
     "vectorStoreUrl": "http://127.0.0.1:6333",
     "collectionName": "opencode-memory-adapter"
@@ -156,4 +202,5 @@ Check that:
 - the same config file is being loaded after restart,
 - your `scope` matches between store and recall,
 - the Ollama embed model is reachable,
-- the vector store path is writable.
+- the vector store path is writable,
+- `historyDbPath` and `vectorStorePath` were actually created.
