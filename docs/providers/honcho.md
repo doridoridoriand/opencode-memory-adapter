@@ -2,6 +2,8 @@
 
 Use `honcho` when you want a managed memory backend or you already run a Honcho deployment.
 
+This guide assumes Node.js 22 or newer.
+
 ## What this plugin expects
 
 - The published package to include its optional `@honcho-ai/sdk` runtime, or a manual install of
@@ -16,6 +18,10 @@ Use `honcho` when you want a managed memory backend or you already run a Honcho 
 npm install -g opencode-memory-adapter
 npx opencode-memory-adapter init
 ```
+
+`npx opencode-memory-adapter init` creates the global config file at
+`~/.config/opencode-memory-adapter/config.json`. If you want a project-local
+`.opencode-memory-adapter.json`, create it manually.
 
 If your npm install omits optional dependencies, or if you need to recover from a partial install,
 run:
@@ -66,6 +72,8 @@ Notes:
 - `workspaceId` is the top-level memory namespace inside Honcho.
 - Reuse the same `workspaceId` across projects only if you intentionally want shared memory.
 - `scope` still matters inside the plugin and is applied on top of the provider.
+- `scope: "project"` does not automatically create one Honcho namespace per repository.
+- The generated starter config uses `workspaceId: "opencode-memory-adapter"`. Change that before storing data if you do not want multiple repositories to share one Honcho workspace.
 
 If you run your own Honcho deployment, replace `baseUrl` with your server URL.
 
@@ -90,6 +98,7 @@ After restarting OpenCode:
 2. Recall it with: "Who approves releases?"
 3. Confirm it appears in `memory-list`.
 4. Delete it with `memory-delete`.
+5. Use the same `scope` for all four calls during the initial test.
 
 Implementation detail that helps when debugging:
 
@@ -129,12 +138,11 @@ Changing any of those can make the new session look empty even though older data
 
 ### I want separate memory per repository
 
-Use either:
+Use a distinct `workspaceId` per repository.
 
-- a distinct `workspaceId` per repository, or
-- one shared `workspaceId` plus `scope: "project"`
-
-The stricter separation is a unique `workspaceId` per repository.
+One shared `workspaceId` plus `scope: "project"` does not distinguish repository A from repository B
+by itself. If you want hard separation, keep a different `workspaceId` in each repository's
+project-local `.opencode-memory-adapter.json`.
 
 ### I run Honcho locally
 
