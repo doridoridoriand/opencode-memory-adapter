@@ -2,6 +2,8 @@
 
 `mem0` is the default provider and the easiest local-first option in this plugin.
 
+This guide assumes Node.js 22 or newer.
+
 ## What this plugin expects
 
 - An OpenAI-compatible embedding + chat endpoint.
@@ -19,6 +21,10 @@ Important:
 npm install -g opencode-memory-adapter
 npx opencode-memory-adapter init
 ```
+
+`npx opencode-memory-adapter init` creates the global config file at
+`~/.config/opencode-memory-adapter/config.json`. If you want a project-local
+`.opencode-memory-adapter.json`, create it manually.
 
 The published package normally installs `mem0ai` and `better-sqlite3` automatically as optional
 runtime dependencies. If your environment omits optional dependencies, or if `better-sqlite3`
@@ -88,13 +94,38 @@ Minimal local config:
 
 Notes:
 
-- `scope: "project"` is a good default if you do not want memories from unrelated repositories mixed together.
+- `scope: "project"` is a label used by the plugin for storing and filtering memories.
+- `scope: "project"` does not automatically create a separate memory namespace for each repository.
 - `ollamaBaseUrl` can omit `/v1`; the plugin adds it automatically for OpenAI-compatible clients.
 - `historyDbPath` and `vectorStorePath` should point to writable paths.
 - Config values support `${...}` environment-variable interpolation. Use `${HOME}/...` or another absolute path for SQLite files; a literal `~` is not expanded.
 - If you already use `honcho` or `openviking` globally, create this as a project-local `.opencode-memory-adapter.json` while testing `mem0`. That leaves your global config untouched.
 
-## 4a. Smaller local-model example
+## 4a. If you want one repository isolated from another
+
+Do not rely on `scope: "project"` alone. If multiple repositories use the same default mem0 paths,
+their `"project"` memories still land in the same local databases.
+
+The safest pattern is a project-local `.opencode-memory-adapter.json` with repo-specific storage
+paths, for example:
+
+```json
+{
+  "provider": "mem0",
+  "scope": "project",
+  "mem0": {
+    "historyDbPath": "${HOME}/.local/share/opencode-memory-adapter/my-repo/history.db",
+    "vectorStoreProvider": "memory",
+    "vectorStorePath": "${HOME}/.local/share/opencode-memory-adapter/my-repo/vector_store.db",
+    "collectionName": "my-repo-memory"
+  }
+}
+```
+
+If you use Qdrant instead of the local SQLite-backed vector store, use a distinct
+`collectionName` per repository.
+
+## 4b. Smaller local-model example
 
 If the generated default models are not installed locally, or you want a lighter setup for a laptop,
 this also works:
@@ -140,6 +171,7 @@ After restarting OpenCode:
 2. Recall it with: "What did I say about staging?"
 3. Confirm it appears in `memory-list`.
 4. Delete it with `memory-delete`.
+5. Use the same `scope` for all four calls during the initial test.
 
 If you are working inside this repository, you can also run the packaged smoke test:
 

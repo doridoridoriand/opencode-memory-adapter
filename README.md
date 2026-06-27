@@ -2,6 +2,13 @@
 
 OpenCode plugin that provides persistent memory functionality via multiple provider backends.
 
+## Before You Start
+
+- Node.js 22 or newer is required.
+- OpenCode must be able to load `opencode-memory-adapter` as a plugin.
+- If you plan to use the default `mem0` provider, have an OpenAI-compatible endpoint ready. Ollama is the generated default and the simplest local option.
+- If you plan to use `honcho` or `openviking`, have a reachable server URL and any required API key ready.
+
 ## Installation
 
 ```bash
@@ -39,13 +46,22 @@ Then generate the starter config:
 npx opencode-memory-adapter init
 ```
 
+`npx opencode-memory-adapter init` creates the global config file at
+`~/.config/opencode-memory-adapter/config.json`. It does not create a project-local
+`.opencode-memory-adapter.json`.
+
 Then add to your `opencode.json`:
 
 ```json
 {
-  "plugin": ["opencode-memory-adapter"]
+  "plugin": [
+    "opencode-memory-adapter"
+  ]
 }
 ```
+
+If your `plugin` array already exists, append `"opencode-memory-adapter"` instead of replacing the
+existing entries.
 
 Restart opencode after installing.
 
@@ -65,8 +81,22 @@ Before publishing locally, run `scan:sensitive`, `audit:package`, `build`, `test
 
 ## Configuration
 
-Create `~/.config/opencode-memory-adapter/config.json` with `npx opencode-memory-adapter init`, or add
-`.opencode-memory-adapter.json` in your project:
+Use one of these config locations:
+
+- Global config: `~/.config/opencode-memory-adapter/config.json`
+- Project-local override: `.opencode-memory-adapter.json` in a repository
+
+Behavior:
+
+- `npx opencode-memory-adapter init` creates only the global config.
+- Create `.opencode-memory-adapter.json` manually when one repository needs different settings.
+- The project-local file overrides the global file.
+- A project-local file can contain only the keys you want to override.
+
+Excerpt from the generated global config:
+
+- `npx opencode-memory-adapter init` writes `mem0`, `honcho`, and `openviking` sections.
+- The snippet below shows the default `mem0` portion first, because that is the default provider.
 
 ```json
 {
@@ -84,8 +114,30 @@ Create `~/.config/opencode-memory-adapter/config.json` with `npx opencode-memory
 }
 ```
 
-**provider**: `"mem0"` | `"honcho"` | `"openviking"` — which memory provider to use.
-**scope**: `"global"` | `"project"` — whether memories are stored globally or per-project.
+Minimal project-local override example:
+
+```json
+{
+  "provider": "mem0",
+  "scope": "project"
+}
+```
+
+That example only overrides the provider and default scope. Add provider-specific storage or
+namespace settings when you need repository isolation.
+
+- `provider`: `"mem0"` | `"honcho"` | `"openviking"` — which memory provider to use.
+- `scope`: `"global"` | `"project"` — labels used by the plugin when storing and filtering
+  memories.
+
+`"project"` does not automatically detect the current repository or create a per-repository memory
+namespace by itself.
+
+If you need one repository isolated from another:
+
+- `mem0`: use a project-local config with repo-specific `historyDbPath` and `vectorStorePath`, or a distinct Qdrant `collectionName`.
+- `honcho`: use a distinct `workspaceId` per repository.
+- `openviking`: the current provider shares one `opencode-memory-adapter/` resource root; `scope` only chooses the `global/` or `project/` subtree.
 
 ## Setup Guides
 
@@ -108,8 +160,9 @@ After changing the config:
 
 1. Restart OpenCode so it reloads the plugin and provider config.
 2. Store a test memory, for example: "Remember that the staging branch deploys to us-west-2."
-3. Immediately recall it with a query like: "What did I say about the staging branch?"
+3. Recall it with a query like: "What did I say about the staging branch?"
 4. Confirm that `memory-list` shows the stored item and `memory-delete` can remove it.
+5. Use the same `scope` for store, recall, and list during the first verification pass.
 
 If the provider-specific setup is correct, store and recall should work in the same session without any extra migration step.
 
@@ -141,7 +194,7 @@ Semantically search stored memories.
 ```
 query: string (required)
 scope: "global" | "project" (optional)
-category: string (optional)
+category: "conversation" | "project" | "preference" | "decision" (optional)
 topK: positive integer (optional, default: 5)
 ```
 
@@ -157,15 +210,15 @@ List stored memories with optional filtering.
 
 ```
 scope: "global" | "project" (optional)
-category: string (optional)
+category: "conversation" | "project" | "preference" | "decision" (optional)
 limit: positive integer (optional, default: 50)
 ```
 
 ### memory-summary
 Generate a summary of recent conversation memories.
 
-```
-auto: boolean (optional)
+```text
+auto: boolean (optional; caller hint only, currently does not change provider behavior)
 sessionId: string (optional, provider-specific hint)
 ```
 
@@ -179,6 +232,9 @@ The published package normally installs the `mem0ai` and `better-sqlite3` runtim
 If you are already using another provider globally, the safest way to try `mem0` is with a
 project-local `.opencode-memory-adapter.json` so you do not have to replace the global provider
 config.
+
+If you need one repository isolated from another, do not rely on `scope: "project"` alone. Use
+repo-specific local database paths, or a distinct Qdrant collection if you use Qdrant.
 
 The generated starter config uses `qwen2.5:7b` and `nomic-embed-text`, but smaller local models
 such as `qwen2.5:3b` and `qwen3-embedding:0.6b` also work if those are the ones you already have
@@ -213,6 +269,9 @@ Cloud-based or self-hosted memory. The published package normally installs `@hon
 automatically. Managed Honcho requires an API key; self-hosted Honcho only needs one if your
 deployment enforces API-key authentication.
 
+For repository isolation, use a distinct `workspaceId` per repository. `scope: "project"` only
+labels memories inside the chosen Honcho workspace.
+
 Full guide: [docs/providers/honcho.md](./docs/providers/honcho.md)
 
 ### OpenViking
@@ -220,6 +279,9 @@ Server-based memory. The published package normally installs `@yfedberts/huscarl
 automatically; you only need a running OpenViking server and, if enabled on your deployment,
 an API key. The provider writes resources through OpenViking's filesystem and WebDAV endpoints,
 then waits for indexing before returning from `memory-store`.
+
+`scope: "project"` maps to the shared `opencode-memory-adapter/project/...` subtree. The current
+provider does not have a repo-specific namespace setting.
 
 Full guide: [docs/providers/openviking.md](./docs/providers/openviking.md)
 

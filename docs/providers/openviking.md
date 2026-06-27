@@ -2,6 +2,8 @@
 
 Use `openviking` when you want a self-hosted memory server with filesystem-style resources and semantic retrieval.
 
+This guide assumes Node.js 22 or newer.
+
 ## What this plugin expects
 
 - The published package to include its optional `@yfedberts/huscarl` runtime, or a manual install
@@ -15,6 +17,10 @@ Use `openviking` when you want a self-hosted memory server with filesystem-style
 npm install -g opencode-memory-adapter
 npx opencode-memory-adapter init
 ```
+
+`npx opencode-memory-adapter init` creates the global config file at
+`~/.config/opencode-memory-adapter/config.json`. If you want a project-local
+`.opencode-memory-adapter.json`, create it manually.
 
 If your npm install omits optional dependencies, or if you need to recover from a partial install,
 run:
@@ -61,6 +67,12 @@ Example config:
 }
 ```
 
+Notes:
+
+- `scope: "project"` maps to the shared `opencode-memory-adapter/project/...` subtree on the server.
+- `scope: "project"` does not include the current repository name or create a repo-specific namespace.
+- The current provider does not expose a configurable resource root. If you need hard per-repository isolation, use a dedicated OpenViking deployment for that repository or extend the plugin.
+
 ## 5. Verify the server before starting OpenCode
 
 The Huscarl client checks the server health endpoint during initialization. A simple preflight is:
@@ -79,6 +91,7 @@ After restarting OpenCode:
 2. Recall it with: "Which branch deploys the docs site?"
 3. Confirm it appears in `memory-list`.
 4. Delete it with `memory-delete`.
+5. Use the same `scope` for all four calls during the initial test.
 
 Implementation detail that helps when debugging:
 
@@ -115,7 +128,7 @@ Check:
 - the OpenViking server finished indexing the uploaded file
 - the server is actually searching the `opencode-memory-adapter/...` resource tree
 
-In this plugin, add waits on `/api/v1/system/wait`, so indexing delay should usually not be the cause. If recall still fails, inspect the uploaded resources on the server side.
+This plugin adds waits on `/api/v1/system/wait`, so indexing delay should usually not be the cause. If recall still fails, inspect the uploaded resources on the server side.
 
 ### I want to inspect what was written
 
