@@ -74,12 +74,12 @@ currently disabled. At the moment, publishing is performed only from the author'
 
 Recommended setup:
 
-1. Bump `package.json` to the release version on `main`.
+1. Update `CHANGELOG.md` and bump `package.json` to the release version on `main`.
 2. Run `npm publish` from the author's local machine after authenticating to npm.
 3. Revoke any temporary automation token immediately after publishing.
 
 Before publishing locally, run `scan:sensitive`, `audit:package`, `build`, `test:unit`, and
-`test:e2e`.
+`test:e2e`, then confirm `npm publish --dry-run` succeeds.
 
 ## Configuration
 
