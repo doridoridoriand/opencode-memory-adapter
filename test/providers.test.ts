@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { Mem0Provider } from "../src/providers/mem0-provider.js";
 import { HonchoProvider } from "../src/providers/honcho-provider.js";
 import { OpenVikingProvider } from "../src/providers/openviking-provider.js";
+import { SupermemoryProvider } from "../src/providers/supermemory-provider.js";
 import { createProvider } from "../src/providers/index.js";
 import { getDefaultMem0Config } from "../src/providers/mem0-defaults.js";
 import { buildMem0SdkConfig } from "../src/providers/mem0-provider.js";
@@ -25,6 +26,12 @@ describe("createProvider", () => {
     const provider = createProvider({ provider: "openviking", openviking: {} });
     expect(provider).toBeDefined();
     expect(provider.constructor.name).toBe("OpenVikingProvider");
+  });
+
+  it("creates supermemory provider", () => {
+    const provider = createProvider({ provider: "supermemory", supermemory: {} });
+    expect(provider).toBeDefined();
+    expect(provider.constructor.name).toBe("SupermemoryProvider");
   });
 
   it("throws on unknown provider", () => {

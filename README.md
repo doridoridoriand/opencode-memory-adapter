@@ -7,7 +7,7 @@ OpenCode plugin that provides persistent memory functionality via multiple provi
 - Node.js 22 or newer is required.
 - OpenCode must be able to load `opencode-memory-adapter` as a plugin.
 - If you plan to use the default `mem0` provider, have an OpenAI-compatible endpoint ready. Ollama is the generated default and the simplest local option.
-- If you plan to use `honcho` or `openviking`, have a reachable server URL and any required API key ready.
+- If you plan to use `honcho`, `openviking`, or `supermemory`, have a reachable server URL and any required API key ready.
 
 ## Installation
 
@@ -31,6 +31,8 @@ npm install @honcho-ai/sdk
 # OpenViking (self-hosted server fallback)
 npm install @yfedberts/huscarl
 ```
+
+`supermemory` uses the built-in `fetch` client in Node.js and does not need any extra npm runtime.
 
 If OpenCode is loading plugins from a local consumer install, run the manual install there. For
 example:
@@ -95,7 +97,7 @@ Behavior:
 
 Excerpt from the generated global config:
 
-- `npx opencode-memory-adapter init` writes `mem0`, `honcho`, and `openviking` sections.
+- `npx opencode-memory-adapter init` writes `mem0`, `honcho`, `openviking`, and `supermemory` sections.
 - The snippet below shows the default `mem0` portion first, because that is the default provider.
 
 ```json
@@ -126,18 +128,18 @@ Minimal project-local override example:
 That example only overrides the provider and default scope. Add provider-specific storage or
 namespace settings when you need repository isolation.
 
-- `provider`: `"mem0"` | `"honcho"` | `"openviking"` — which memory provider to use.
+- `provider`: `"mem0"` | `"honcho"` | `"openviking"` | `"supermemory"` — which memory provider to use.
 - `scope`: `"global"` | `"project"` — labels used by the plugin when storing and filtering
   memories.
 
-`"project"` does not automatically detect the current repository or create a per-repository memory
-namespace by itself.
+Provider-specific repo isolation behavior differs:
 
 If you need one repository isolated from another:
 
 - `mem0`: use a project-local config with repo-specific `historyDbPath` and `vectorStorePath`, or a distinct Qdrant `collectionName`.
 - `honcho`: use a distinct `workspaceId` per repository.
 - `openviking`: the current provider shares one `opencode-memory-adapter/` resource root; `scope` only chooses the `global/` or `project/` subtree.
+- `supermemory`: the default config derives a stable `projectContainerTag` from the current worktree path, so `scope: "project"` is worktree-specific unless you override that tag manually.
 
 ## Setup Guides
 
@@ -147,11 +149,13 @@ If you want step-by-step setup instructions, use the provider guides:
 - [mem0 setup](./docs/providers/mem0.md)
 - [Honcho setup](./docs/providers/honcho.md)
 - [OpenViking setup](./docs/providers/openviking.md)
+- [Supermemory setup](./docs/providers/supermemory.md)
 
 For most users:
 
 - Choose `mem0` if you want the simplest local setup and are already comfortable running Ollama.
 - Choose `honcho` if you want managed memory with the least infrastructure to operate yourself.
+- Choose `supermemory` if you want a self-hosted memory API with built-in indexing and per-repository container tags by default.
 - Choose `openviking` if you already run OpenViking or want a self-hosted server with a filesystem-style resource model.
 
 ## Quick Verification
@@ -262,7 +266,39 @@ Example:
 }
 ```
 
-Full guide: [docs/providers/mem0.md](./docs/providers/mem0.md)
+### supermemory
+Local-first by default, points at a self-hosted Supermemory server on `http://localhost:6767` and
+uses the v4 memory APIs over plain HTTP.
+
+This provider does not need an extra npm runtime. You only need a running Supermemory server and
+its API key.
+
+The generated config derives two container tags automatically:
+
+- `globalContainerTag`: stable per user machine
+- `projectContainerTag`: stable per worktree path
+
+That means `scope: "project"` is worktree-specific by default for Supermemory, unlike the current
+`mem0`, `honcho`, and `openviking` implementations.
+
+Example self-hosted config:
+
+```json
+{
+  "provider": "supermemory",
+  "scope": "project",
+  "supermemory": {
+    "apiKey": "${SUPERMEMORY_API_KEY}",
+    "baseUrl": "http://localhost:6767",
+    "similarityThreshold": 0.6
+  }
+}
+```
+
+If you use the hosted Supermemory API instead, replace `baseUrl` with
+`https://api.supermemory.ai`.
+
+Full guide: [docs/providers/supermemory.md](./docs/providers/supermemory.md)
 
 ### Honcho
 Cloud-based or self-hosted memory. The published package normally installs `@honcho-ai/sdk`

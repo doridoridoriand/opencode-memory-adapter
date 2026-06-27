@@ -2,7 +2,7 @@ export type MemoryCategory = "conversation" | "project" | "preference" | "decisi
 
 export type MemoryScope = "global" | "project";
 
-export type MemoryProviderName = "mem0" | "honcho" | "openviking";
+export type MemoryProviderName = "mem0" | "honcho" | "openviking" | "supermemory";
 
 export interface MemoryMetadata {
   category: MemoryCategory;
@@ -45,6 +45,7 @@ export interface MemoryPluginConfig {
   mem0?: Mem0Config;
   honcho?: HonchoConfig;
   openviking?: OpenVikingConfig;
+  supermemory?: SupermemoryConfig;
 }
 
 export interface Mem0Config {
@@ -68,4 +69,13 @@ export interface HonchoConfig {
 export interface OpenVikingConfig {
   url?: string;
   apiKey?: string;
+}
+
+export interface SupermemoryConfig {
+  apiKey?: string;
+  baseUrl?: string;
+  similarityThreshold?: number;
+  containerTagPrefix?: string;
+  globalContainerTag?: string;
+  projectContainerTag?: string;
 }
