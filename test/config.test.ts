@@ -192,4 +192,40 @@ describe("loadConfig", () => {
       apiKey: "ov-secret", // sensitive-scan: allow fixture value
     });
   });
+
+  it("merges supermemory config when supermemory is selected", async () => {
+    const homeDir = await makeTempDir("opencode-memory-adapter-home-");
+    const worktree = await makeTempDir("opencode-memory-adapter-worktree-");
+    vi.stubEnv("SUPERMEMORY_API_KEY", "sm-secret");
+
+    await writeJson(join(homeDir, ".config", "opencode-memory-adapter", "config.json"), {
+      provider: "supermemory",
+      supermemory: {
+        apiKey: "${SUPERMEMORY_API_KEY}",
+        baseUrl: "http://localhost:6767",
+      },
+    });
+    await writeJson(join(worktree, ".opencode-memory-adapter.json"), {
+      scope: "project",
+      supermemory: {
+        similarityThreshold: 0.75,
+      },
+    });
+
+    const { loadConfig } = await importConfigModule(homeDir);
+    const config = loadConfig(worktree);
+
+    expect(config.provider).toBe("supermemory");
+    expect(config.scope).toBe("project");
+    expect(config.supermemory).toEqual({
+      apiKey: "sm-secret", // sensitive-scan: allow fixture value
+      baseUrl: "http://localhost:6767",
+      similarityThreshold: 0.75,
+      containerTagPrefix: "opencode-memory-adapter",
+      globalContainerTag: expect.stringMatching(/^opencode-memory-adapter_global_[0-9a-f]{12}$/),
+      projectContainerTag: expect.stringMatching(
+        /^opencode-memory-adapter_project_[0-9a-f]{12}$/
+      ),
+    });
+  });
 });

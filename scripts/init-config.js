@@ -28,6 +28,12 @@ const DEFAULT_CONFIG = {
     url: "http://localhost:1933",
     apiKey: "${OPENVIKING_API_KEY}",
   },
+  supermemory: {
+    apiKey: "${SUPERMEMORY_API_KEY}",
+    baseUrl: "http://localhost:6767",
+    similarityThreshold: 0.6,
+    containerTagPrefix: "opencode-memory-adapter",
+  },
 };
 
 function printUsage() {

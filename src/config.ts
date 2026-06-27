@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { getDefaultMem0Config } from "./providers/mem0-defaults.js";
+import { getDefaultSupermemoryConfig } from "./providers/supermemory-defaults.js";
 import type { MemoryPluginConfig, MemoryProviderName } from "./types.js";
 
 const GLOBAL_CONFIG_PATH = join(homedir(), ".config", "opencode-memory-adapter", "config.json");
@@ -56,6 +57,12 @@ export function loadConfig(worktree: string): MemoryPluginConfig {
     merged.honcho = { ...globalConfig?.honcho, ...projectConfig?.honcho };
   } else if (merged.provider === "openviking") {
     merged.openviking = { ...globalConfig?.openviking, ...projectConfig?.openviking };
+  } else if (merged.provider === "supermemory") {
+    merged.supermemory = {
+      ...getDefaultSupermemoryConfig(worktree),
+      ...globalConfig?.supermemory,
+      ...projectConfig?.supermemory,
+    };
   }
 
   return interpolateEnv(merged) as MemoryPluginConfig;
@@ -65,4 +72,4 @@ export function getGlobalConfigPath(): string {
   return GLOBAL_CONFIG_PATH;
 }
 
-const VALID_PROVIDERS: MemoryProviderName[] = ["mem0", "honcho", "openviking"];
+const VALID_PROVIDERS: MemoryProviderName[] = ["mem0", "honcho", "openviking", "supermemory"];
