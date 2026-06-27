@@ -3,6 +3,7 @@ import { SupermemoryProvider } from "../src/providers/supermemory-provider.js";
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });
 
 describe("SupermemoryProvider", () => {
@@ -115,6 +116,9 @@ describe("SupermemoryProvider", () => {
       containerTag: "project_tag",
       threshold: 0.75,
       searchMode: "memories",
+      filters: {
+        AND: [{ key: "category", value: "project" }],
+      },
     });
     expect(body.limit).toBeGreaterThanOrEqual(3);
   });
@@ -204,6 +208,9 @@ describe("SupermemoryProvider", () => {
       },
     ]);
     expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({
+      containerTags: ["project_tag"],
+    });
   });
 
   it("forgets memories by trying both configured container tags", async () => {
@@ -239,5 +246,60 @@ describe("SupermemoryProvider", () => {
       containerTag: "project_tag",
       id: "mem_123",
     });
+  });
+
+  it("treats missing deletes as a no-op", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: "not found" }), {
+          status: 404,
+          headers: { "content-type": "application/json" },
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: "not found" }), {
+          status: 404,
+          headers: { "content-type": "application/json" },
+        })
+      );
+    const provider = new SupermemoryProvider({
+      apiKey: "sm-test",
+      baseUrl: "http://localhost:6767",
+      projectContainerTag: "project_tag",
+      globalContainerTag: "global_tag",
+    });
+
+    await expect(provider.delete("missing-id")).resolves.toBeUndefined();
+  });
+
+  it("prefers the runtime base URL override env var when set", async () => {
+    vi.stubEnv("SUPERMEMORY_API_URL", "http://supermemory.override:9999");
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          results: [],
+        }),
+        {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }
+      )
+    );
+    const provider = new SupermemoryProvider({
+      apiKey: "sm-test",
+      baseUrl: "http://localhost:6767",
+      projectContainerTag: "project_tag",
+      globalContainerTag: "global_tag",
+    });
+
+    await provider.search("test", {
+      scope: "project",
+      topK: 1,
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://supermemory.override:9999/v4/search",
+      expect.any(Object)
+    );
   });
 });

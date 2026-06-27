@@ -42,6 +42,15 @@ interface SupermemoryListResponse {
   };
 }
 
+interface SupermemoryFilter {
+  key?: string;
+  value?: string;
+  filterType?: string;
+  negate?: boolean;
+  AND?: SupermemoryFilter[];
+  OR?: SupermemoryFilter[];
+}
+
 function normalizeOptionalString(value: string | null | undefined): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
@@ -84,24 +93,27 @@ function toRequestLimit(limit: number, needsLocalFiltering: boolean): number {
   return Math.min(Math.max(limit * 5, limit), MAX_API_LIMIT);
 }
 
+function buildMetadataFilters(category?: string): { AND: SupermemoryFilter[] } | undefined {
+  if (!category) return undefined;
+  return {
+    AND: [{ key: "category", value: category }],
+  };
+}
+
 export class SupermemoryProvider extends BaseMemoryProvider {
   private config: ResolvedSupermemoryConfig;
 
   constructor(config: SupermemoryConfig = {}) {
     super();
-    this.config = {
-      ...getDefaultSupermemoryConfig(process.cwd()),
-      ...config,
-    };
+    this.config = getDefaultSupermemoryConfig(process.cwd(), config);
   }
 
   private getBaseUrl(): string {
+    const envBaseUrl = normalizeOptionalString(
+      process.env.SUPERMEMORY_API_URL ?? process.env.SUPERMEMORY_BASE_URL
+    );
     return trimTrailingSlash(
-      normalizeOptionalString(
-        this.config.baseUrl ??
-          process.env.SUPERMEMORY_API_URL ??
-          process.env.SUPERMEMORY_BASE_URL
-      ) ?? "http://localhost:6767"
+      envBaseUrl ?? normalizeOptionalString(this.config.baseUrl) ?? "http://localhost:6767"
     );
   }
 
@@ -194,6 +206,7 @@ export class SupermemoryProvider extends BaseMemoryProvider {
   async search(query: string, opts: SearchOptions): Promise<MemoryResult[]> {
     const scope = opts.scope ?? "global";
     const targetLimit = opts.topK ?? 5;
+    const filters = buildMetadataFilters(opts.category);
     const response = await this.request<SupermemorySearchResponse>("/v4/search", {
       method: "POST",
       body: JSON.stringify({
@@ -202,6 +215,7 @@ export class SupermemoryProvider extends BaseMemoryProvider {
         threshold: this.config.similarityThreshold,
         limit: toRequestLimit(targetLimit, opts.category != null),
         searchMode: "memories",
+        ...(filters ? { filters } : {}),
       }),
     });
 
@@ -243,7 +257,7 @@ export class SupermemoryProvider extends BaseMemoryProvider {
       }
     }
 
-    throw new Error(`Supermemory memory not found: ${id}`);
+    return;
   }
 
   async list(opts: ListOptions): Promise<MemoryResult[]> {
@@ -254,7 +268,7 @@ export class SupermemoryProvider extends BaseMemoryProvider {
     let currentPage = 1;
     let totalPages = 1;
 
-    while (currentPage <= totalPages && memories.length < Math.max(targetLimit, pageSize)) {
+    while (currentPage <= totalPages && memories.length < targetLimit) {
       const response = await this.request<SupermemoryListResponse>("/v4/memories/list", {
         method: "POST",
         body: JSON.stringify({
@@ -267,10 +281,17 @@ export class SupermemoryProvider extends BaseMemoryProvider {
       });
 
       const entries = Array.isArray(response.memoryEntries) ? response.memoryEntries : [];
+      const pageMemories = entries
+        .filter((entry) => isRecord(entry) && entry.isForgotten !== true)
+        .map((entry) => toMemoryResult(entry, scope))
+        .filter((entry): entry is MemoryResult => entry != null);
+      let filteredPage = this.filterByScope(pageMemories, opts.scope);
+      filteredPage = this.filterByCategory(filteredPage, opts.category);
+
+      memories.push(...filteredPage);
+
       for (const entry of entries) {
-        if (!isRecord(entry) || entry.isForgotten === true) continue;
-        const memory = toMemoryResult(entry, scope);
-        if (memory) memories.push(memory);
+        if (!isRecord(entry)) continue;
       }
 
       totalPages =
@@ -282,9 +303,7 @@ export class SupermemoryProvider extends BaseMemoryProvider {
       }
     }
 
-    let filtered = this.filterByScope(memories, opts.scope);
-    filtered = this.filterByCategory(filtered, opts.category);
-    return this.applyLimit(filtered, targetLimit);
+    return this.applyLimit(memories, targetLimit);
   }
 
   async summarize(sessionId?: string): Promise<string> {

@@ -139,7 +139,7 @@ If you need one repository isolated from another:
 - `mem0`: use a project-local config with repo-specific `historyDbPath` and `vectorStorePath`, or a distinct Qdrant `collectionName`.
 - `honcho`: use a distinct `workspaceId` per repository.
 - `openviking`: the current provider shares one `opencode-memory-adapter/` resource root; `scope` only chooses the `global/` or `project/` subtree.
-- `supermemory`: the default config derives a stable `projectContainerTag` from the current worktree path, so `scope: "project"` is repo-specific unless you override that tag manually.
+- `supermemory`: the default config derives a stable `projectContainerTag` from the current worktree path, so `scope: "project"` is worktree-specific unless you override that tag manually.
 
 ## Setup Guides
 
@@ -278,7 +278,7 @@ The generated config derives two container tags automatically:
 - `globalContainerTag`: stable per user machine
 - `projectContainerTag`: stable per worktree path
 
-That means `scope: "project"` is repo-specific by default for Supermemory, unlike the current
+That means `scope: "project"` is worktree-specific by default for Supermemory, unlike the current
 `mem0`, `honcho`, and `openviking` implementations.
 
 Example self-hosted config:
@@ -298,7 +298,7 @@ Example self-hosted config:
 If you use the hosted Supermemory API instead, replace `baseUrl` with
 `https://api.supermemory.ai`.
 
-Full guide: [docs/providers/mem0.md](./docs/providers/mem0.md)
+Full guide: [docs/providers/supermemory.md](./docs/providers/supermemory.md)
 
 ### Honcho
 Cloud-based or self-hosted memory. The published package normally installs `@honcho-ai/sdk`

@@ -58,10 +58,13 @@ export function loadConfig(worktree: string): MemoryPluginConfig {
   } else if (merged.provider === "openviking") {
     merged.openviking = { ...globalConfig?.openviking, ...projectConfig?.openviking };
   } else if (merged.provider === "supermemory") {
-    merged.supermemory = {
-      ...getDefaultSupermemoryConfig(worktree),
+    const supermemoryOverrides = {
       ...globalConfig?.supermemory,
       ...projectConfig?.supermemory,
+    };
+    merged.supermemory = {
+      ...getDefaultSupermemoryConfig(worktree, supermemoryOverrides),
+      ...supermemoryOverrides,
     };
   }
 

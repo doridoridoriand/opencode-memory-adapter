@@ -228,4 +228,28 @@ describe("loadConfig", () => {
       ),
     });
   });
+
+  it("recomputes derived supermemory tags when containerTagPrefix is overridden", async () => {
+    const homeDir = await makeTempDir("opencode-memory-adapter-home-");
+    const worktree = await makeTempDir("opencode-memory-adapter-worktree-");
+
+    await writeJson(join(worktree, ".opencode-memory-adapter.json"), {
+      provider: "supermemory",
+      supermemory: {
+        containerTagPrefix: "workspace-memory",
+      },
+    });
+
+    const { loadConfig } = await importConfigModule(homeDir);
+    const config = loadConfig(worktree);
+
+    expect(config.supermemory).toEqual({
+      apiKey: undefined,
+      baseUrl: "http://localhost:6767",
+      similarityThreshold: 0.6,
+      containerTagPrefix: "workspace-memory",
+      globalContainerTag: expect.stringMatching(/^workspace-memory_global_[0-9a-f]{12}$/),
+      projectContainerTag: expect.stringMatching(/^workspace-memory_project_[0-9a-f]{12}$/),
+    });
+  });
 });
