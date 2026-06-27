@@ -1,7 +1,7 @@
 {
   "name": "opencode-memory-adapter",
   "description": "OpenCode plugin that provides persistent memory functionality via multiple provider backends",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "license": "MIT",
   "keywords": [
     "opencode",
@@ -9,7 +9,8 @@
     "memory",
     "mem0",
     "honcho",
-    "openviking"
+    "openviking",
+    "supermemory"
   ],
   "homepage": "https://github.com/doridoridoriand/opencode-memory-adapter#readme",
   "bugs": {

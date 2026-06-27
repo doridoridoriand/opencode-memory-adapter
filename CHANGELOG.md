@@ -2,6 +2,18 @@
 
 This changelog was reconstructed from the repository's Git tags and commit history.
 
+## [v0.2.0] - 2026-06-27
+
+### Added
+
+- Added a new `supermemory` provider with defaults for local/self-hosted deployments, OpenCode config wiring, and full provider guide documentation.
+- Added provider coverage for Supermemory store, recall, list, delete, config merge behavior, and runtime base URL overrides.
+
+### Changed
+
+- Clarified installation, publishing, and provider setup guidance across the README and provider docs, including project-local override behavior and optional runtime dependency notes.
+- Hardened the Supermemory integration around category-aware search, filtered pagination for `memory-list`, idempotent delete handling, and bounded request timeouts for stalled HTTP calls.
+
 ## [v0.1.3] - 2026-06-24
 
 ### Fixed
@@ -42,3 +54,4 @@ This changelog was reconstructed from the repository's Git tags and commit histo
 [v0.1.1]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/68797b3...v0.1.1
 [v0.1.2]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.1.1...v0.1.2
 [v0.1.3]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.1.2...v0.1.3
+[v0.2.0]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.1.3...v0.2.0
