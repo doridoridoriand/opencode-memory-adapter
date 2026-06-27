@@ -11,6 +11,7 @@ import type {
 } from "../types.js";
 
 const MAX_API_LIMIT = 100;
+const REQUEST_TIMEOUT_MS = 30_000;
 
 class SupermemoryRequestError extends Error {
   status: number;
@@ -143,11 +144,28 @@ export class SupermemoryProvider extends BaseMemoryProvider {
       headers.set("Content-Type", "application/json");
     }
 
-    const response = await fetch(`${this.getBaseUrl()}${path}`, {
-      ...init,
-      headers,
-    });
-    const text = await response.text();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+    let response: Response;
+    let text: string;
+    try {
+      response = await fetch(`${this.getBaseUrl()}${path}`, {
+        ...init,
+        headers,
+        signal: controller.signal,
+      });
+      text = await response.text();
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw new Error(
+          `Supermemory request timed out after ${REQUEST_TIMEOUT_MS}ms (${init.method ?? "GET"} ${path})`
+        );
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     if (!response.ok) {
       throw new SupermemoryRequestError(

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { SupermemoryProvider } from "../src/providers/supermemory-provider.js";
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
 });
@@ -301,5 +302,38 @@ describe("SupermemoryProvider", () => {
       "http://supermemory.override:9999/v4/search",
       expect.any(Object)
     );
+  });
+
+  it("aborts stalled requests after the timeout", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockImplementation((_url, init) => {
+      const signal = init?.signal;
+      return new Promise((_resolve, reject) => {
+        signal?.addEventListener(
+          "abort",
+          () => reject(new DOMException("The operation was aborted.", "AbortError")),
+          { once: true }
+        );
+      });
+    });
+    const provider = new SupermemoryProvider({
+      apiKey: "sm-test",
+      baseUrl: "http://localhost:6767",
+      projectContainerTag: "project_tag",
+      globalContainerTag: "global_tag",
+    });
+
+    const request = provider.search("test", {
+      scope: "project",
+      topK: 1,
+    });
+    const expectation = expect(request).rejects.toThrow(
+      "Supermemory request timed out after 30000ms (POST /v4/search)"
+    );
+
+    await vi.advanceTimersByTimeAsync(30_000);
+
+    await expectation;
+    expect(fetchMock.mock.calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
   });
 });
