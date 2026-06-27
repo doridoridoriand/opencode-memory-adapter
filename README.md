@@ -6,7 +6,7 @@ OpenCode plugin that provides persistent memory functionality via multiple provi
 
 - Node.js 22 or newer is required.
 - OpenCode must be able to load `opencode-memory-adapter` as a plugin.
-- If you plan to use the default `mem0` provider, install and start Ollama first.
+- If you plan to use the default `mem0` provider, have an OpenAI-compatible endpoint ready. Ollama is the generated default and the simplest local option.
 - If you plan to use `honcho` or `openviking`, have a reachable server URL and any required API key ready.
 
 ## Installation
@@ -93,7 +93,10 @@ Behavior:
 - The project-local file overrides the global file.
 - A project-local file can contain only the keys you want to override.
 
-Starter global config:
+Excerpt from the generated global config:
+
+- `npx opencode-memory-adapter init` writes `mem0`, `honcho`, and `openviking` sections.
+- The snippet below shows the default `mem0` portion first, because that is the default provider.
 
 ```json
 {
@@ -214,7 +217,7 @@ limit: positive integer (optional, default: 50)
 ### memory-summary
 Generate a summary of recent conversation memories.
 
-```
+```text
 auto: boolean (optional; caller hint only, currently does not change provider behavior)
 sessionId: string (optional, provider-specific hint)
 ```

@@ -6,14 +6,14 @@ Use this directory when you want provider-specific setup instructions instead of
 
 - Node.js 22 or newer
 - OpenCode configured to load the `opencode-memory-adapter` plugin
-- For `mem0`: Ollama installed and running
+- For `mem0`: an OpenAI-compatible endpoint and writable local storage. Ollama is the generated default and the simplest local option.
 - For `honcho` / `openviking`: a reachable server URL and any required API key
 
 ## Which provider should I pick?
 
 | Provider | Best fit | What you need | Guide |
 | --- | --- | --- | --- |
-| `mem0` | Local-first development, minimal infrastructure, private on-disk storage | Ollama, writable local storage | [mem0.md](./mem0.md) |
+| `mem0` | Local-first development, minimal infrastructure, private on-disk storage | OpenAI-compatible endpoint (Ollama by default), writable local storage | [mem0.md](./mem0.md) |
 | `honcho` | Managed memory or an existing Honcho deployment | Reachable Honcho deployment, API key when the deployment requires one | [honcho.md](./honcho.md) |
 | `openviking` | Self-hosted server and filesystem-style memory resources | Running OpenViking server, API key only when enabled on that server | [openviking.md](./openviking.md) |
 
