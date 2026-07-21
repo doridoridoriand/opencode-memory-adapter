@@ -2,6 +2,12 @@
 
 This changelog was reconstructed from the repository's Git tags and commit history.
 
+## [v0.2.1] - 2026-07-21
+
+### Fixed
+
+- Bumped `protobufjs` from 7.6.4 to 7.6.5 via Dependabot to pick up the upstream security patch in the transitive dependency tree.
+
 ## [v0.2.0] - 2026-06-27
 
 ### Added
@@ -55,3 +61,4 @@ This changelog was reconstructed from the repository's Git tags and commit histo
 [v0.1.2]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.1.1...v0.1.2
 [v0.1.3]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.1.2...v0.1.3
 [v0.2.0]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.1.3...v0.2.0
+[v0.2.1]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.2.0...v0.2.1
