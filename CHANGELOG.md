@@ -2,6 +2,13 @@
 
 This changelog was reconstructed from the repository's Git tags and commit history.
 
+## [v0.2.2] - 2026-09-04
+
+### Fixed
+
+- Bumped `undici` from 6.27.0 to 6.28.0 via Dependabot to pick up the upstream security patch in the transitive dependency tree.
+- Bumped development dependencies `postcss` from 8.5.15 to 8.5.25 and `toml` from 4.1.1 to 4.3.0 via Dependabot.
+
 ## [v0.2.1] - 2026-07-21
 
 ### Fixed
@@ -62,3 +69,4 @@ This changelog was reconstructed from the repository's Git tags and commit histo
 [v0.1.3]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.1.2...v0.1.3
 [v0.2.0]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.1.3...v0.2.0
 [v0.2.1]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.2.0...v0.2.1
+[v0.2.2]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.2.1...v0.2.2
