@@ -2,6 +2,14 @@
 
 This changelog was reconstructed from the repository's Git tags and commit history.
 
+## [v0.2.3] - 2026-10-02
+
+### Fixed
+
+- Bumped `axios` from 1.18.1 to 1.20.0 to address upstream security advisories in the transitive dependency tree.
+- Bumped `undici` from 6.28.0 to 6.29.0 via Dependabot to pick up the upstream security patch in the transitive dependency tree.
+- Bumped development dependency `vitest` from 4.1.9 to 4.1.11 via Dependabot.
+
 ## [v0.2.2] - 2026-09-04
 
 ### Fixed
@@ -70,3 +78,4 @@ This changelog was reconstructed from the repository's Git tags and commit histo
 [v0.2.0]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.1.3...v0.2.0
 [v0.2.1]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.2.0...v0.2.1
 [v0.2.2]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.2.1...v0.2.2
+[v0.2.3]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.2.2...v0.2.3
