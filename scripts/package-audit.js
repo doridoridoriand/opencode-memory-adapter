@@ -17,6 +17,7 @@ const ALLOWED_PACKAGE_PATHS = [
   /^LICENSE$/,
   /^README\.md$/,
   /^package\.json$/,
+  /^server\.js$/,
   /^dist\//,
   /^docs\//,
   /^scripts\/init-config\.js$/,

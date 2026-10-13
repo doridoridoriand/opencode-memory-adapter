@@ -237,7 +237,7 @@ async function main() {
       )
         .href
     );
-    hooks = await pluginModule.default({
+    hooks = await pluginModule.default.server({
       directory: worktree,
       worktree,
     });

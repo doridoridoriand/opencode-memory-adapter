@@ -2,6 +2,23 @@
 
 This changelog was reconstructed from the repository's Git tags and commit history.
 
+## Unreleased
+
+### Fixed
+
+- Ported plugin loading and tool registration to the OpenCode V2 `@opencode/plugin` API, targeting OpenCode 2.0.28.
+- Preserved memory tool names, aliases, provider configuration, and worktree-root config discovery, with provider cleanup on unload and failed setup.
+- Added a packaged `server.js` entrypoint and `./server` export so V2 can discover both installed packages and local plugin directories.
+
+### Changed
+
+- Exposed the V1 implementation through `server()` for OpenCode 1.18.29 and newer, and removed the V1 plugin SDK runtime peer dependency.
+- Updated installation guidance to use the V2 `plugins` configuration field.
+
+### Added
+
+- V2 regression coverage and an installed-binary smoke test using a packed consumer install and an isolated local memory backend.
+
 ## [v0.2.3] - 2026-10-02
 
 ### Fixed

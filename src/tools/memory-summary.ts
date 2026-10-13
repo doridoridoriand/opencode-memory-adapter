@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { tool } from "@opencode-ai/plugin";
-import type { ToolRuntime } from "./shared.js";
+import { tool, type ToolRuntime } from "./shared.js";
 
 export function createMemorySummaryTool(runtime: ToolRuntime) {
   return tool({

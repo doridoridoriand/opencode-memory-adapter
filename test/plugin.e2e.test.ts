@@ -58,7 +58,7 @@ describe("plugin bootstrap e2e", () => {
     vi.doMock("../src/providers/index.js", () => ({ createProvider }));
 
     const { default: plugin } = await import("../src/index.js");
-    const hooks = await plugin({
+    const hooks = await plugin.server({
       directory: worktree,
       worktree,
     } as any);
@@ -142,7 +142,7 @@ describe("plugin bootstrap e2e", () => {
     vi.doMock("../src/providers/index.js", () => ({ createProvider }));
 
     const { default: plugin } = await import("../src/index.js");
-    await plugin({
+    await plugin.server({
       directory: nestedDirectory,
       worktree,
     } as any);
@@ -192,11 +192,11 @@ describe("plugin bootstrap e2e", () => {
     vi.doMock("../src/providers/index.js", () => ({ createProvider }));
 
     const { default: plugin } = await import("../src/index.js");
-    const firstHooks = await plugin({
+    const firstHooks = await plugin.server({
       directory: firstWorktree,
       worktree: firstWorktree,
     } as any);
-    await plugin({
+    await plugin.server({
       directory: secondWorktree,
       worktree: secondWorktree,
     } as any);

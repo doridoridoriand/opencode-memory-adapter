@@ -5,7 +5,7 @@ OpenCode plugin that provides persistent memory functionality via multiple provi
 ## Before You Start
 
 - Node.js 22 or newer is required.
-- OpenCode must be able to load `opencode-memory-adapter` as a plugin.
+- OpenCode 2.0.28 or newer is supported. The package also exposes a legacy `server()` entrypoint for OpenCode 1.18.29 or newer; older V1 versions should use the published adapter 0.2.3.
 - If you plan to use the default `mem0` provider, have an OpenAI-compatible endpoint ready. Ollama is the generated default and the simplest local option.
 - If you plan to use `honcho`, `openviking`, or `supermemory`, have a reachable server URL and any required API key ready.
 
@@ -56,16 +56,38 @@ Then add to your `opencode.json`:
 
 ```json
 {
-  "plugin": [
+  "plugins": [
     "opencode-memory-adapter"
   ]
 }
 ```
 
-If your `plugin` array already exists, append `"opencode-memory-adapter"` instead of replacing the
+If your `plugins` array already exists, append `"opencode-memory-adapter"` instead of replacing the
 existing entries.
 
-Restart opencode after installing.
+Restart OpenCode after installing. V1 configuration uses `plugin` instead of `plugins`.
+
+### Migrating to OpenCode 2
+
+Update the adapter package as well as OpenCode. OpenCode 2 cannot execute the V1 plugin
+implementation shipped in adapter 0.2.x. This implementation uses the native
+[`@opencode/plugin` API](https://opencode.ai/v2/docs/build/plugins/migrate-v1/), registering tools
+with `ctx.tool.transform` and returning a provider cleanup function from `setup`.
+
+Your memory backend, existing memories, adapter config files, and tool names can be reused.
+The tools remain directly callable in V2, including both hyphenated and snake_case names.
+
+To try an unpublished checkout locally, run `npm ci` and `npm run build`, then set the plugin
+entry in your OpenCode configuration to the absolute path of this repository:
+
+```json
+{
+  "plugins": ["/path/to/opencode-memory-adapter"]
+}
+```
+
+Replace the previous adapter entry to avoid loading two copies, then restart OpenCode.
+`opencode plugin list` should show `opencode-memory-adapter` as active.
 
 ## Publishing
 
@@ -349,8 +371,14 @@ npm run test:unit
 npm run test:e2e
 npm run test:coverage
 npm run test:smoke:mem0
+npm run test:smoke:opencode
 npm run test:smoke:k8s
 ```
+
+`npm run test:smoke:opencode` requires an installed OpenCode V2 binary (or `OPENCODE_BIN`).
+It installs a packed copy in a temporary consumer, starts an isolated native server, and
+executes all ten tool names against a local mock memory backend. It requires no LLM credentials
+and does not change your OpenCode config or stored memories.
 
 `npm run test:smoke:k8s` uses the existing Docker Desktop Kubernetes cluster via the
 `docker-desktop` context. If you need a different context name, set `KUBECTL_CONTEXT`.

@@ -6,6 +6,21 @@ OpenCode custom tools plugin that provides persistent memory functionality via m
 
 ## Architecture
 
+### OpenCode Entrypoints
+
+The default export has a stable `opencode-memory-adapter` ID and a V2 `setup(ctx)`
+implementation defined through `@opencode/plugin`. It reads configuration from
+`ctx.location.project.directory`, creates one provider per plugin instance, and registers
+tools with a synchronous, replayable `ctx.tool.transform` callback. The callback captures
+prebuilt tool definitions and performs no provider operations. Setup returns a cleanup
+function that disposes the provider; failed registration also disposes it.
+The root `server.js` shim and `./server` package export support V2 entrypoint discovery.
+
+Memory tool factories share their Zod argument definitions and provider operations across
+both APIs. V2 receives JSON schemas, validated inputs, and `{ content }` results, with
+`codemode: false` to preserve direct tool invocation. The default export also includes
+`server()` for the V1 object-entrypoint API in OpenCode 1.18.29 and newer.
+
 ### Provider Abstraction Pattern
 
 ```
@@ -123,7 +138,6 @@ Project: `.opencode-memory-adapter.json` (takes precedence)
 ```json
 {
   "peerDependencies": {
-    "@opencode-ai/plugin": ">=1.0.0",
     "mem0ai": ">=3.0.0",
     "@qdrant/js-client-rest": ">=1.18.0",
     "better-sqlite3": ">=12.6.2",
@@ -131,6 +145,7 @@ Project: `.opencode-memory-adapter.json` (takes precedence)
     "@yfedberts/huscarl": ">=1.0.0"
   },
   "dependencies": {
+    "@opencode/plugin": "2.0.28",
     "zod": "^4.1.8"
   },
   "peerDependenciesMeta": {
