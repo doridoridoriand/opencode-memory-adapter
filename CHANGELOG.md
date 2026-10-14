@@ -9,6 +9,8 @@ This changelog was reconstructed from the repository's Git tags and commit histo
 - Ported plugin loading and tool registration to the OpenCode V2 `@opencode/plugin` API, targeting OpenCode 2.0.28.
 - Preserved memory tool names, aliases, provider configuration, and worktree-root config discovery, with provider cleanup on unload and failed setup.
 - Added a packaged `server.js` entrypoint and `./server` export so V2 can discover both installed packages and local plugin directories.
+- Raised the Node.js minimum to 22.19.0 to match the V2 runtime dependencies.
+- Made native smoke-test command timeouts escalate from `SIGTERM` to `SIGKILL`, with timer cleanup on process errors and termination.
 
 ### Changed
 

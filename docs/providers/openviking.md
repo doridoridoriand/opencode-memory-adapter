@@ -2,7 +2,7 @@
 
 Use `openviking` when you want a self-hosted memory server with filesystem-style resources and semantic retrieval.
 
-This guide assumes Node.js 22 or newer.
+This guide assumes Node.js 22.19.0 or newer.
 
 ## What this plugin expects
 

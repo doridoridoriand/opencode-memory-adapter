@@ -2,7 +2,7 @@
 
 `mem0` is the default provider and the easiest local-first option in this plugin.
 
-This guide assumes Node.js 22 or newer.
+This guide assumes Node.js 22.19.0 or newer.
 
 ## What this plugin expects
 

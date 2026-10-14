@@ -4,7 +4,7 @@ Use this directory when you want provider-specific setup instructions instead of
 
 ## Common prerequisites
 
-- Node.js 22 or newer
+- Node.js 22.19.0 or newer
 - OpenCode configured to load the `opencode-memory-adapter` plugin
 - For `mem0`: an OpenAI-compatible endpoint and writable local storage. Ollama is the generated default and the simplest local option.
 - For `honcho` / `openviking` / `supermemory`: a reachable server URL and any required API key

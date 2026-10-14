@@ -4,7 +4,7 @@ OpenCode plugin that provides persistent memory functionality via multiple provi
 
 ## Before You Start
 
-- Node.js 22 or newer is required.
+- Node.js 22.19.0 or newer is required.
 - OpenCode 2.0.28 or newer is supported. The package also exposes a legacy `server()` entrypoint for OpenCode 1.18.29 or newer; older V1 versions should use the published adapter 0.2.3.
 - If you plan to use the default `mem0` provider, have an OpenAI-compatible endpoint ready. Ollama is the generated default and the simplest local option.
 - If you plan to use `honcho`, `openviking`, or `supermemory`, have a reachable server URL and any required API key ready.

@@ -10,6 +10,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { setTimeout as delay } from "node:timers/promises";
+import { runSmokeCommand } from "./smoke-process.js";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const binary = process.env.OPENCODE_BIN || "opencode";
@@ -60,20 +61,7 @@ const server = createServer(async (req, res) => {
 });
 
 function run(args, cwd, env) {
-  return new Promise((resolve, reject) => {
-    const child = spawn(binary, args, { cwd, env, stdio: ["ignore", "pipe", "pipe"] });
-    let stdout = "";
-    let stderr = "";
-    child.stdout.on("data", chunk => { stdout += chunk; });
-    child.stderr.on("data", chunk => { stderr += chunk; });
-    const timeout = setTimeout(() => child.kill("SIGTERM"), 60_000);
-    child.on("error", error => { clearTimeout(timeout); reject(error); });
-    child.on("close", code => {
-      clearTimeout(timeout);
-      if (code !== 0) reject(new Error(`OpenCode exited with ${code}:\n${stderr}\n${stdout}`));
-      else resolve({ stdout, stderr });
-    });
-  });
+  return runSmokeCommand(binary, args, { cwd, env });
 }
 
 try {
