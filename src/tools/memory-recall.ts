@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { tool } from "@opencode-ai/plugin";
-import { resolveScope, type ToolRuntime } from "./shared.js";
+import { tool, resolveScope, type ToolRuntime } from "./shared.js";
 
 export function createMemoryRecallTool(runtime: ToolRuntime) {
   return tool({

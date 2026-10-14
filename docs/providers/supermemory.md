@@ -3,7 +3,7 @@
 Use `supermemory` when you want a self-hosted memory API with built-in indexing and semantic
 search.
 
-This guide assumes Node.js 22 or newer.
+This guide assumes Node.js 22.19.0 or newer.
 
 ## What this plugin expects
 

@@ -2,7 +2,7 @@
 
 Use `honcho` when you want a managed memory backend or you already run a Honcho deployment.
 
-This guide assumes Node.js 22 or newer.
+This guide assumes Node.js 22.19.0 or newer.
 
 ## What this plugin expects
 

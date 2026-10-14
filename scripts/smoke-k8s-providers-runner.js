@@ -100,7 +100,7 @@ async function runMem0Test(pluginModule, worktree, baseUrl) {
   );
 
   await resetDebugState(baseUrl, "openai");
-  const hooks = await pluginModule.default({
+  const hooks = await pluginModule.default.server({
     directory: worktree,
     worktree,
   });
@@ -177,7 +177,7 @@ async function runHonchoTest(pluginModule, worktree, baseUrl) {
   );
 
   await resetDebugState(baseUrl, "honcho");
-  const hooks = await pluginModule.default({
+  const hooks = await pluginModule.default.server({
     directory: worktree,
     worktree,
   });
@@ -268,7 +268,7 @@ async function runOpenVikingTest(pluginModule, worktree, baseUrl) {
   );
 
   await resetDebugState(baseUrl, "openviking");
-  const hooks = await pluginModule.default({
+  const hooks = await pluginModule.default.server({
     directory: worktree,
     worktree,
   });

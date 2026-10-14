@@ -21,13 +21,17 @@
     "url": "git+https://github.com/doridoridoriand/opencode-memory-adapter.git"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.19.0"
   },
   "type": "module",
   "main": "dist/index.js",
-  "exports": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./server": "./server.js"
+  },
   "files": [
     "dist",
+    "server.js",
     "docs",
     "scripts/init-config.js",
     "README.md",
@@ -52,12 +56,11 @@
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "test:coverage": "vitest run --config vitest.config.ts --coverage",
     "test:smoke:mem0": "node scripts/smoke-mem0.js",
+    "test:smoke:opencode": "node scripts/smoke-opencode.js",
     "test:smoke:k8s": "node scripts/smoke-k8s-providers.js"
   },
-  "peerDependencies": {
-    "@opencode-ai/plugin": ">=1.0.0"
-  },
   "dependencies": {
+    "@opencode/plugin": "2.0.28",
     "zod": "^4.1.8"
   },
   "optionalDependencies": {
