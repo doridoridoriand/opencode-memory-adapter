@@ -69,8 +69,20 @@ Restart OpenCode after installing. V1 configuration uses `plugin` instead of `pl
 
 ### Migrating to OpenCode 2
 
-Update the adapter package as well as OpenCode. OpenCode 2 cannot execute the V1 plugin
-implementation shipped in adapter 0.2.x. This implementation uses the native
+OpenCode 2 support starts with adapter 0.3.0. Update the adapter package as well as OpenCode;
+OpenCode 2 cannot execute the V1 plugin implementation shipped in adapter 0.2.x.
+
+For an unpinned `"opencode-memory-adapter"` entry in `plugins`, update the package managed by
+OpenCode:
+
+```bash
+opencode plugin update opencode-memory-adapter
+```
+
+For a version-pinned entry, set it to `"opencode-memory-adapter@0.3.0"` or a newer compatible
+release. Restart OpenCode after updating.
+
+This implementation uses the native
 [`@opencode/plugin` API](https://opencode.ai/v2/docs/build/plugins/migrate-v1/), registering tools
 with `ctx.tool.transform` and returning a provider cleanup function from `setup`.
 
@@ -96,7 +108,8 @@ currently disabled. At the moment, publishing is performed only from the author'
 
 Recommended setup:
 
-1. Update `CHANGELOG.md` and bump `package.json` to the release version on `main`.
+1. Update `CHANGELOG.md` and use `npm version <version> --no-git-tag-version` to bump both
+   `package.json` and `package-lock.json`. Merge the release changes into `main`.
 2. Run `npm publish` from the author's local machine after authenticating to npm.
 3. Revoke any temporary automation token immediately after publishing.
 
