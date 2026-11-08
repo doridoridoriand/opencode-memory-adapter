@@ -2,6 +2,17 @@
 
 This changelog was reconstructed from the repository's Git tags and commit history.
 
+## [v0.3.2] - 2026-11-08
+
+### Fixed
+
+- Bumped `undici` from 8.11.2 to 8.12.3 and from 6.29.0 to 6.29.1 (separate lockfile copies) via Dependabot to pick up the upstream security fixes for CVE-2026-87018, CVE-2026-109383, CVE-2026-109829, and CVE-2026-109869 (High severity), and CVE-2026-87029 (Medium severity).
+- Bumped `mem0ai` from 3.0.9 to 3.1.6 via Dependabot, carrying upstream security patches for its bundled dependencies (`undici`, `brace-expansion`, `ip-address`).
+- Bumped `follow-redirects` from 1.16.1 to 1.16.2 via Dependabot.
+- Bumped `zod` from 4.1.8 to 4.6.6 via Dependabot.
+- Bumped development dependencies `vitest` and `@vitest/coverage-v8` from 4.1.11 to 4.1.12 to pick up the upstream security fix in `@vitest/mocker`; bundled vitest dependencies (`rolldown`, `chai`, `vite`, and other dev-tree transitives) moved along.
+- Pinned the `zod` copy nested under `@opencode-ai/plugin` to the root zod version via a scoped npm override (`$zod`), keeping the build green across future zod minor updates (the plugin pins an exact zod version).
+
 ## [v0.3.1] - 2026-10-24
 
 ### Fixed
@@ -107,3 +118,4 @@ This changelog was reconstructed from the repository's Git tags and commit histo
 [v0.2.3]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.2.2...v0.2.3
 [v0.3.0]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.2.3...v0.3.0
 [v0.3.1]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.3.0...v0.3.1
+[v0.3.2]: https://github.com/doridoridoriand/opencode-memory-adapter/compare/v0.3.1...v0.3.2
