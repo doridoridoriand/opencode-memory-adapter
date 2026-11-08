@@ -10,6 +10,7 @@ This changelog was reconstructed from the repository's Git tags and commit histo
 - Bumped `mem0ai` from 3.0.9 to 3.1.6 via Dependabot, carrying upstream security patches for its bundled dependencies (`undici`, `brace-expansion`, `ip-address`).
 - Bumped `follow-redirects` from 1.16.1 to 1.16.2 via Dependabot.
 - Bumped `zod` from 4.1.8 to 4.6.6 via Dependabot.
+- Bumped development dependencies `vitest` and `@vitest/coverage-v8` from 4.1.11 to 4.1.12 to pick up the upstream security fix in `@vitest/mocker`; bundled vitest dependencies (`rolldown`, `chai`, `vite`, and other dev-tree transitives) moved along.
 - Pinned the `zod` copy nested under `@opencode-ai/plugin` to the root zod version via a scoped npm override (`$zod`), keeping the build green across future zod minor updates (the plugin pins an exact zod version).
 
 ## [v0.3.1] - 2026-10-24
